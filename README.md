@@ -1,13 +1,13 @@
-**master:**
-![example workflow](https://github.com/RagnarB83/ash/actions/workflows/python-app-conda.yml/badge.svg)
-**NEW:**
-![example branch parameter](https://github.com/RagnarB83/ash/actions/workflows/python-app-conda.yml/badge.svg?branch=NEW)
+# ASH: a multi-scale, multi-theory modelling program
 
-<img src="ash-simple-logo-letterbig.png" alt="drawing" width="300" align="right"/>
-
- # ASH: a multi-scale, multi-theory modelling program
-ASH is a Python-based computational chemistry and QM/MM environment for molecular calculations in the gas phase, explicit solution, crystal or protein environment. It's a program for performing single-point calculations, geometry optimizations, nudged elastic band calculations, surface scans, molecular dynamics, numerical frequencies and many other things using a MM, QM, QM/MM or ONIOM Hamiltonian.
-Interfaces to popular QM codes: ORCA, xTB, PySCF, MRCC, ccpy, Psi4, Dalton, CFour, TeraChem, QUICK. Interface to the OpenMM library for MM and MD algorithms. Interfaces to specialized high-level QM codes like Block, Dice and ipie for DMRG, SHCI and AFQMC calculations. Interfaces to machine-learning libraries like PyTorch, MACE and MLatom for using and training machine learning potentials.
+ASH is a Python-based computational chemistry and QM/MM environment for molecular calculations in the gas phase,
+explicit solution, crystal or protein environment. It's a program for performing single-point calculations, geometry
+optimizations, nudged elastic band calculations, surface scans, molecular dynamics, numerical frequencies and many other
+things using a MM, QM, QM/MM or ONIOM Hamiltonian.
+Interfaces to popular QM codes: ORCA, xTB, PySCF, MRCC, ccpy, Psi4, Dalton, CFour, TeraChem, QUICK. Interface to the
+OpenMM library for MM and MD algorithms. Interfaces to specialized high-level QM codes like Block, Dice and ipie for
+DMRG, SHCI and AFQMC calculations. Interfaces to machine-learning libraries like PyTorch, MACE and MLatom for using and
+training machine learning potentials.
 Excellent environment for writing simple or complex computational chemistry workflows.
 
 **In case of problems:**
@@ -27,17 +27,16 @@ pip install git+https://github.com/RagnarB83/ash.git
 pip install git+https://github.com/RagnarB83/ash.git@NEW
  ```
 
-
 **Documentation:**
 
- https://ash.readthedocs.io
-
+https://ash.readthedocs.io
 
 **Development:**
 
 ASH welcomes any contributions.
 
 Ongoing priorities:
+
 - Improve packaging
 - Prepare for 1.0 release
 - Fix more Python faux pas

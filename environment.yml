@@ -1,8 +1,6 @@
-name: conda environment for ASH
-#Only conda-forge allowed for now
+name: ash
 channels:
   - conda-forge
-#Some basic easy-to-install packages for ASH
 dependencies:
   - python=3.11
   - pip
@@ -14,5 +12,5 @@ dependencies:
   - xtb-python
   - typing_extensions
   - pip:
-    - geometric
-    - pyscf
+      - geometric
+      - pyscf
