@@ -1,4 +1,4 @@
-name: ash
+name: ash_test
 channels:
   - conda-forge
 dependencies:
@@ -8,9 +8,18 @@ dependencies:
   - pdbfixer
   - mdtraj
   - numpy
+  - scipy
+  - matplotlib
+  - parmed
+  - plumed
+  - pyjuliacall
+  - julia
+  - mdanalysis
+  - ase
   - xtb
   - xtb-python
   - typing_extensions
   - pip:
       - geometric
       - pyscf
+      - pyframe
