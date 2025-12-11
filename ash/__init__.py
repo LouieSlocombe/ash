@@ -71,9 +71,6 @@ from .functions.functions_elstructure import read_cube, write_cube, write_cube_d
     diagonalize_DM_AO, diagonalize_DM, DM_AO_to_MO, DM_AO_to_MO, DM_MO_to_AO, select_space_from_occupations,select_indices_from_occupations, ASH_write_integralfile, \
     density_sensitivity_metric
 
-#multiwfn interface
-import ash.interfaces.interface_multiwfn
-from .interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from .modules.module_spinprojection import SpinProjectionTheory
 # HybridTheory: DualTheory and WrapTheory
@@ -91,38 +88,6 @@ from .interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA
         new_ORCA_natorbsfile_from_density, ORCA_orbital_setup, create_ORCA_FCIDUMP, print_gradient_in_ORCAformat
 import ash.interfaces.interface_ORCA
 
-from .interfaces.interface_Psi4 import Psi4Theory
-from .interfaces.interface_dalton import DaltonTheory
-from .interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,KS_inversion_kspies,DFA_error_analysis,pySCF_write_Moldenfile
-density_potential_inversion=KS_inversion_kspies #Temporary
-from .interfaces.interface_ipie import ipieTheory
-from .interfaces.interface_dice import DiceTheory
-from .interfaces.interface_block import BlockTheory
-from .interfaces.interface_MRCC import MRCCTheory, run_MRCC_HLC_correction, convert_MRCC_Molden_file
-from .interfaces.interface_QUICK import QUICKTheory
-from .interfaces.interface_TeraChem import TeraChemTheory
-from .interfaces.interface_sparrow import SparrowTheory
-from .interfaces.interface_NWChem import NWChemTheory
-from .interfaces.interface_Gaussian import GaussianTheory
-from .interfaces.interface_Turbomole import TurbomoleTheory
-from .interfaces.interface_ReSpect import ReSpectTheory
-from .interfaces.interface_CP2K import CP2KTheory
-from .interfaces.interface_BigDFT import BigDFTTheory
-from .interfaces.interface_deMon import deMon2kTheory
-from .interfaces.interface_ccpy import ccpyTheory
-from .interfaces.interface_MNDO import MNDOTheory
-
-from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
-from .interfaces.interface_xtb import xTBTheory, gxTBTheory
-from .interfaces.interface_DFTB import DFTBTheory
-from .interfaces.interface_PyMBE import PyMBETheory
-from .interfaces.interface_MLatom import MLatomTheory
-from .interfaces.interface_DRACO import get_draco_radii
-from .interfaces.interface_Grimme_corrections import DFTD4Theory, calc_DFTD4, calc_gcp, gcpTheory
-from .interfaces.interface_torch import TorchTheory
-from .interfaces.interface_mace import MACETheory
-from .interfaces.interface_fairchem import FairchemTheory
-from .interfaces.interface_packmol import packmol_solvate
 
 # MM: external and internal
 from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
@@ -140,8 +105,6 @@ small_molecule_parameterizor=small_molecule_parameterizer
 
 from .modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy, coulombcharge, LennardJones, \
     LJCoulombv2, LJCoulomb, MMforcefield_read
-#MDtraj
-from .interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_RMSF, MDtraj_RMSD, MDtraj_coord_analyze
 
 # Theory, Numgrad
 from .modules.module_theory import Theory, QMTheory, NumGradclass, MECPGradclass
@@ -149,18 +112,6 @@ from .modules.module_theory import Theory, QMTheory, NumGradclass, MECPGradclass
 # QM/MM
 from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy
 from .modules.module_polembed import PolEmbedTheory
-
-# Knarr
-from .interfaces.interface_knarr import NEB, NEBTS, interpolation_geodesic
-
-#VMD
-from .interfaces.interface_VMD import write_VMD_script_cube
-
-# ASE-Dynamics
-from .interfaces.interface_ASE import Dynamics_ASE
-
-# Plumed interface
-from .interfaces.interface_plumed import plumed_ASH, plumed_MTD_analyze, plumed_FES_plot_1CV
 
 # Solvation
 # NOTE: module_solvation.py or module_solvation2.py To be cleaned up
@@ -172,12 +123,6 @@ from .modules.module_molcrys import molcrys, Fragmenttype
 
 # Geometry optimization
 from .functions.functions_optimization import SimpleOpt, BernyOpt
-from .interfaces.interface_dlfind import DLFIND_optimizer
-
-# geomeTRIC interface
-from .interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICOptimizerClass
-Optimizer = geomeTRICOptimizer
-Opt = geomeTRICOptimizer
 
 # PES
 from .modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT, plot_PES_Spectrum,Read_old_PES_results
@@ -195,9 +140,6 @@ from .modules.module_workflows import ReactionEnergy, thermochemprotocol_reactio
 import ash.modules.module_benchmarking
 from .modules.module_benchmarking import run_benchmark
 
-#Small helper tools
-from .interfaces.interface_small_helpers import create_adaptive_minimal_basis_set
-
 #Machine-learning tools
 from .modules.module_machine_learning import create_ML_training_data, Ml_print_model_stats
 # To be deleted
@@ -207,9 +149,6 @@ Mlatom_print_model_stats=Ml_print_model_stats
 import ash.modules.module_plotting
 from .modules.module_plotting import reactionprofile_plot, contourplot, plot_Spectrum, MOplot_vertical, ASH_plot
 
-# Other
-import ash.interfaces.interface_crest
-from .interfaces.interface_crest import call_crest, call_crest_entropy, get_crest_conformers, new_call_crest
 
 # Initialize settings
 import ash.settings_ash
@@ -224,19 +163,7 @@ if ash.settings_ash.settings_dict["print_exit_footer"] is True:
     if ash.settings_ash.settings_dict["print_full_timings"] is True:
         atexit.register(ash.ash_header.print_timings)
 
-# Julia dependency. Load in the beginning or not.
-# As PythonCall can be a bit slow to load, it is best to only load when needed (current behaviour)
-if ash.settings_ash.settings_dict["load_julia"] is True:
-    try:
-        print("Importing Julia interface and loading functions")
-        Juliafunctions = load_julia_interface()
-
-    except ImportError:
-        print("Problem importing Julia interface")
-        print(
-            "Make sure Julia is installed, Pythoncall/juliacall and the required Julia packages have been installed.")
-        print("Proceeding. Slower Python routines will used instead when possible")
-        # Connectivity code in Fragment
-        ash.settings_ash.settings_dict["connectivity_code"] = "py"
-        # LJ+Coulomb and pairpot arrays in nonbonded MM
-        ash.settings_ash.settings_dict["nonbondedMM_code"] = "py"
+# Connectivity code in Fragment
+ash.settings_ash.settings_dict["connectivity_code"] = "py"
+# LJ+Coulomb and pairpot arrays in nonbonded MM
+ash.settings_ash.settings_dict["nonbondedMM_code"] = "py"
