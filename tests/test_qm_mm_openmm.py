@@ -187,7 +187,6 @@ def test_qm_mm_orca_openmm():
 
 
 def test_qm_mm_pyscf_openmm_lysozyme():
-    n_cores = 10
     pdb_file = f"./tests/pdbfiles/1aki_solvated.pdb"
     fragment = Fragment(pdbfile=pdb_file)
 
@@ -195,7 +194,6 @@ def test_qm_mm_pyscf_openmm_lysozyme():
     omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml"],
                        pdbfile=pdb_file,
                        periodic=True,
-                       numcores=n_cores,
                        autoconstraints=None,
                        rigidwater=False)
     # QM
