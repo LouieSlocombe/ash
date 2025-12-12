@@ -1,8 +1,10 @@
-from ash import *
 from math import isclose
 import numpy as np
+import os
 
-
+from ash.modules.module_coords import Fragment
+from ash.interfaces.interface_xtb import xTBTheory
+from ash.modules.module_singlepoint import Singlepoint
 
 
 def test_xtb_load():
@@ -13,9 +15,6 @@ def test_xtb_load():
     """
     # Defining fragment
     H2O = Fragment(coordsstring=coords, charge=0, mult=1)
-
-    # global H2O
-    # Default
     xtb_default = xTBTheory()
     assert xtb_default.xtbmethod == 'GFN1'
 
@@ -28,7 +27,8 @@ def test_xtb_load():
 
     # Specifying dummy xtbdir and changing xtbmethod
     xtb_with_dir_gfn2 = xTBTheory(xtbdir='/path/to/xtb',
-                                  xtbmethod='GFN2', runmode='inputfile')
+                                  xtbmethod='GFN2',
+                                  runmode='inputfile')
     assert xtb_with_dir_gfn2.xtbdir == '/path/to/xtb'
     assert xtb_with_dir_gfn2.xtbmethod == 'GFN2'
 
@@ -50,3 +50,7 @@ def test_xtb_load():
 
     xtb_default.cleanup()
     xtb_library.cleanup()
+    os.remove('xtb_.engrad')
+    os.remove('gradient')
+    os.remove('energy')
+    os.remove('ASH_SP.result')

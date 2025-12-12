@@ -1,38 +1,39 @@
-from ash import *
+import os
+
+import numpy as np
+
+from ash.modules.module_coords import Fragment
 
 
 def test_fragread():
     # Testing multiple ways of creating/modifying fragments.
-
     fragcoords = """
     H 0.0 0.0 0.0
     F 0.0 0.0 1.0
     """
     HF_frag = Fragment(coordsstring=fragcoords)
-    ####################################################
+
     # From lists
     elems = ['H', 'Cl']
     coords = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]]
     HCl_frag = Fragment(elems=elems, coords=coords)
-    ##############################
+
     # From np array
     elems2 = ['H', 'Cl']
     coords2 = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.9]])
     HCl_frag_np = Fragment(elems=elems2, coords=coords2)
-    ##############################
+
     # From XYZ file
-    HI_frag = Fragment(xyzfile=f"{ashpath}/tests/xyzfiles/hi.xyz")
-    #######################################
+    HI_frag = Fragment(xyzfile=f"./tests/xyzfiles/hi.xyz")
+
     # New frag from fragcoords directly
     HF_frag2 = Fragment(coordsstring=fragcoords)
-    ##################################
+
     # Replace coordinates in fragment
     elems = ['H', 'Cl']
     coords = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.1]]
     HCl_frag.replace_coords(elems, coords)
-    ##############################
 
-    #########################
     # Recalculate connectivity
     HCl_frag.calc_connectivity()
     print(HCl_frag.connectivity)
@@ -66,14 +67,11 @@ def test_fragread_files():
     assert New_frag.numatoms == 2, "Number of atoms is not correct"
     assert New_frag.nuccharge == 10, "Nuccharge of fragment is incorrect"
 
+    os.remove('HF_frag.ygg')
+
 
 def test_read_pdb():
-    # Define global system settings ( scale, tol and conndepth keywords for connectivity)
-
-    # PDB read in
-    PDB_frag = Fragment(pdbfile=f"{ashpath}/tests/pdbfiles/1aki.pdb", conncalc=False)
+    PDB_frag = Fragment(pdbfile=f"./tests/pdbfiles/1aki.pdb", conncalc=False)
     print("PDB_frag:", PDB_frag)
-    # print("PDB frag dict", PDB_frag.__dict__)
     print(PDB_frag.numatoms)
-
     assert PDB_frag.numatoms == 1079, "Number of atoms in fragment is incorrect"
