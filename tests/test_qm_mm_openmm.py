@@ -7,8 +7,10 @@ from ash.interfaces.interface_OpenMM import OpenMMTheory
 from ash.interfaces.interface_pyscf import PySCFTheory
 from ash.modules.module_QMMM import QMMMTheory
 from ash.modules.module_singlepoint import Singlepoint
+from ash.interfaces.interface_ORCA import ORCATheory
 
-def test_qm_mm_pyscf_nonbondedtheory_MeOH_H2O():
+
+def test_qm_mm_pyscf_nonbondedtheory():
     h2o_meoh = Fragment(xyzfile=f"./tests/xyzfiles/h2o_MeOH.xyz")
 
     # Specifying the QM atoms (3-8) by atom indices (MeOH). The other atoms (0,1,2) is the H2O and MM.
@@ -67,7 +69,7 @@ def test_qm_mm_pyscf_nonbondedtheory_MeOH_H2O():
     os.remove('pyscf.out')
 
 
-def test_qm_mm_pyscf_openmm_MeOH_H2O():
+def test_qm_mm_pyscf_openmm():
     h2o_meoh = Fragment(xyzfile=f"./tests/xyzfiles/h2o_MeOH.xyz")
 
     # Write PDB-file for OpenMM (used for topology)
@@ -118,6 +120,69 @@ def test_qm_mm_pyscf_openmm_MeOH_H2O():
     os.remove('ASH_SP.result')
     os.remove('pyscf.chk')
     os.remove('pyscf.out')
+    os.remove('h2o_MeOH.pdb')
+
+
+def test_qm_mm_orca_openmm():
+    h2o_meoh = Fragment(xyzfile=f"./tests/xyzfiles/h2o_MeOH.xyz")
+
+    # Write PDB-file for OpenMM (used for topology)
+    h2o_meoh.write_pdbfile_openmm(filename="h2o_MeOH.pdb", skip_connectivity=True)
+    pdb_file = "h2o_MeOH.pdb"
+
+    # Specifying the QM atoms (3-8) by atom indices (MeOH). The other atoms (0,1,2) is the H2O and MM.
+    # IMPORTANT: atom indices begin at 0.
+    qm_atoms = [3, 4, 5, 6, 7, 8]
+
+    # ORCA
+    orcasimpleinput = "! BP86 def2-SVP tightscf notrah"
+    orcablocks = "%scf maxiter 200 end"
+
+    qm = ORCATheory(orcasimpleinput=orcasimpleinput,
+                    orcablocks=orcablocks)
+
+    mm_part = OpenMMTheory(xmlfiles=[f"./tests/extra_files/MeOH_H2O-sigma.xml"],
+                           pdbfile=pdb_file,
+                           autoconstraints=None,
+                           rigidwater=False)
+
+    # Creating QM/MM object
+    qmmm_object = QMMMTheory(fragment=h2o_meoh,
+                             qm_theory=qm,
+                             mm_theory=mm_part,
+                             qmatoms=qm_atoms,
+                             embedding='Elstat')
+
+    # Single-point energy calculation of QM/MM object
+    result = Singlepoint(theory=qmmm_object,
+                         fragment=h2o_meoh,
+                         charge=0,
+                         mult=1,
+                         Grad=True)
+
+    ref_energy = -115.95970693488094
+    ref_gradient = np.array([[-0.09752915, 0.06209886, 0.02914283],
+                             [0.02113842, -0.07293119, -0.0499293],
+                             [0.07594458, 0.01091787, 0.02068298],
+                             [-0.00110236, -0.00293094, -0.01332718],
+                             [-0.00205525, 0.00636527, 0.00796327],
+                             [0.00980917, -0.00360006, 0.00472817],
+                             [-0.00547724, -0.00832853, 0.00601341],
+                             [-0.00224821, 0.01657924, -0.00181844],
+                             [0.00152004, -0.00817051, -0.00345574]])
+
+    assert np.isclose(result.energy, ref_energy, atol=2e-6), "Energy is not correct"
+    assert np.allclose(result.gradient, ref_gradient, atol=1e-5), "Gradient is not correct"
+
+    qm.cleanup()
+    os.remove('orca.bibtex')
+    os.remove('orca.densitiesinfo')
+    os.remove('orca.out')
+    os.remove('orca.pc')
+    os.remove('orca.pcgrad')
+    os.remove('orca.property.txt')
+
+    os.remove('ASH_SP.result')
     os.remove('h2o_MeOH.pdb')
 
 
