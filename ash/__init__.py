@@ -1,9 +1,6 @@
 # Python libraries
-import sys
-import atexit
 import pathlib
-import os
-import glob
+import sys
 
 # Getting ASH-path
 ashpath = str(pathlib.Path(__file__).parent.resolve())
@@ -215,31 +212,3 @@ from .interfaces.interface_crest import call_crest, call_crest_entropy, get_cres
 
 # Initialize settings
 import ash.settings_ash
-
-# Print header
-import ash.ash_header
-
-ash.ash_header.print_header()
-
-# Exit command (footer)
-if ash.settings_ash.settings_dict["print_exit_footer"] is True:
-    atexit.register(ash.ash_header.print_footer)
-    if ash.settings_ash.settings_dict["print_full_timings"] is True:
-        atexit.register(ash.ash_header.print_timings)
-
-# Julia dependency. Load in the beginning or not.
-# As PythonCall can be a bit slow to load, it is best to only load when needed (current behaviour)
-if ash.settings_ash.settings_dict["load_julia"] is True:
-    try:
-        print("Importing Julia interface and loading functions")
-        Juliafunctions = load_julia_interface()
-
-    except ImportError:
-        print("Problem importing Julia interface")
-        print(
-            "Make sure Julia is installed, Pythoncall/juliacall and the required Julia packages have been installed.")
-        print("Proceeding. Slower Python routines will used instead when possible")
-        # Connectivity code in Fragment
-        ash.settings_ash.settings_dict["connectivity_code"] = "py"
-        # LJ+Coulomb and pairpot arrays in nonbonded MM
-        ash.settings_ash.settings_dict["nonbondedMM_code"] = "py"
