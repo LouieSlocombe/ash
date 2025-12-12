@@ -1,8 +1,6 @@
-name: conda environment for ASH
-#Only conda-forge allowed for now
+name: ash_test
 channels:
   - conda-forge
-#Some basic easy-to-install packages for ASH
 dependencies:
   - python=3.11
   - pip
@@ -10,9 +8,18 @@ dependencies:
   - pdbfixer
   - mdtraj
   - numpy
+  - scipy
+  - matplotlib
+  - parmed
+  - plumed
+  - pyjuliacall
+  - julia
+  - mdanalysis
+  - ase
   - xtb
   - xtb-python
   - typing_extensions
   - pip:
-    - geometric
-    - pyscf
+      - geometric
+      - pyscf
+      - pyframe
