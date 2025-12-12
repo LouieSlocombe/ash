@@ -1,5 +1,5 @@
 import os
-
+import shutil
 
 def test_import_ash():
     import ash
@@ -25,6 +25,9 @@ def test_simple_optimization():
 
     # Optimize with dummy theory
     result = geomeTRICOptimizer(fragment=H2Ofragment, theory=zerotheorycalc)
+    # remove directory created by geomeTRIC
+    if os.path.exists("geometric_tmpdir"):
+        shutil.rmtree("geometric_OPTtraj.tmp")
 
     os.remove("ASH_Optimizer.result")
     os.remove("Fragment-currentgeo.xyz")
