@@ -9,11 +9,19 @@ import os
 import subprocess as sp
 from collections import defaultdict
 
-from ash.functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, \
-    print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, \
-    load_julia_interface, \
-    search_list_of_lists_for_index, natural_sort
+from ash.functions.functions_general import (ashexit,
+                                             isint,
+                                             listdiff,
+                                             print_time_rel,
+                                             BC,
+                                             printdebug,
+                                             print_line_with_mainheader,
+                                             print_line_with_subheader1,
+                                             print_line_with_subheader1_end,
+                                             print_line_with_subheader2,
+                                             writelisttofile,
+                                             search_list_of_lists_for_index,
+                                             natural_sort)
 import ash.dictionaries_lists
 import ash.settings_ash
 import ash.constants
@@ -438,7 +446,7 @@ class Fragment:
         return [index for index, el in enumerate(self.elems) if el != element]
 
     # Get list of lists of bonds. Used for X-H constraints for example
-    def get_XH_indices(self, conncode='julia'):
+    def get_XH_indices(self):
         timestamp = time.time()
         scale = ash.settings_ash.settings_dict["scale"]
         tol = ash.settings_ash.settings_dict["tol"]
@@ -446,28 +454,11 @@ class Fragment:
         # Hatoms=[1,2,3,5]
         # print("H Atoms: ", str(Hatoms).strip("[]"))
 
-        # way too slow
-        if conncode == 'py':
-            final_list = []
-            for Hatom in Hatoms:
-                connatoms = get_connected_atoms_np(self.coords, self.elems, scale, tol, Hatom)
-                final_list.append(connatoms)
-            return final_list
-        else:
-            print("Loading Julia")
-            try:
-                Juliafunctions = load_julia_interface()
-            except:
-                print("Problem loading Julia")
-                ashexit()
-            final_list = Juliafunctions.get_connected_atoms_forlist_julia(self.coords, self.elems, scale, tol,
-                                                                          eldict_covrad, Hatoms)
-        # print("final_list: ", str(final_list).strip("[]"))
-        print_time_rel(timestamp, modulename='get_XH_indices', moduleindex=4)
+        final_list = []
+        for Hatom in Hatoms:
+            connatoms = get_connected_atoms_np(self.coords, self.elems, scale, tol, Hatom)
+            final_list.append(connatoms)
         return final_list
-        # Call connectivity routines
-        # for el in self.elems:
-        #    if -
 
     def delete_atom(self, atomindex):
         self.coords = np.delete(self.coords, atomindex, axis=0)
@@ -699,25 +690,6 @@ class Fragment:
             print("Calculating connectivity of fragment using py.")
             fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
             print_time_rel(timestampA, modulename='calc connectivity py', moduleindex=4)
-        elif codeversion == 'julia':
-            print("Calculating connectivity of fragment using Julia.")
-            try:
-                Juliafunctions = load_julia_interface()
-                fraglist_temp = Juliafunctions.calc_connectivity(self.coords, self.elems, conndepth, scale, tol,
-                                                                 eldict_covrad)
-                fraglist = []
-                # Converting from numpy to list of lists
-                for sublist in fraglist_temp:
-                    fraglist.append(list(sublist))
-                print_time_rel(timestampA, modulename='calc connectivity julia', moduleindex=4)
-            except:
-                print(BC.FAIL, "Problem importing Python-Julia interface.", BC.END)
-                print("Make sure Julia is installed and Python-Julia interface has been set up.")
-                print(BC.FAIL, "Using Python version instead (slow for large systems)", BC.END)
-                # Switching default to py since Julia did not load
-                ash.settings_ash.settings_dict["connectivity_code"] = "py"
-                fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
-                print_time_rel(timestampA, modulename='calc connectivity py', moduleindex=4)
         self.connectivity = fraglist
         # Calculate number of atoms in connectivity list of lists
         conn_number_sum = 0
@@ -1206,18 +1178,7 @@ def print_internal_coordinate_table(fragment, actatoms=None):
     conndepth = 99
     scale = ash.settings_ash.settings_dict["scale"]
     tol = ash.settings_ash.settings_dict["tol"]
-
-    if len(chosen_coords) > 1000:
-        try:
-            Juliafunctions = load_julia_interface()
-            connectivity = Juliafunctions.calc_connectivity(chosen_coords, chosen_elems, conndepth, scale, tol,
-                                                            eldict_covrad)
-        except:
-            print("Problem importing Python-Julia interface. Trying py-version instead.")
-            connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
-    else:
-        # PyTHON connectivity
-        connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
+    connectivity = calc_conn_py(chosen_coords, chosen_elems, conndepth, scale, tol)
     print("Connectivity calculation complete.")
     # else:
     #    print("Using precalculated connectivity")
@@ -2849,44 +2810,6 @@ def scipy_hungarian(A, B):
     return assignment
 
 
-# Hungarian algorithm to reorder coordinates. Uses Julia to calculates distances between coordinate-arrays A and B and then Hungarian Julia package.
-def hungarian_julia(A, B):
-    from scipy.spatial.distance import cdist
-    try:
-        # Calculating distances via Julia
-        # print("Here. Calling Julia distances")
-        # timestampA = time.time()
-
-        # This one is SLOW!!! For rad30 Bf3hcn example it takes 23 seconds compare to 3.8 sec for scipy. 0.8 sec for scipy for both dist and hungarian
-        # distances =Juliafunctions.distance_array(A,B)
-        distances = cdist(A, B, 'euclidean')
-        # ash.print_time_rel(timestampA, modulename='julia distance array')
-        # timestampA = time.time()
-        # Julian Hungarian call. Requires Hungarian package
-        try:
-            Juliafunctions = load_julia_interface()
-        except:
-            print("Problem loading Julia.")
-            ashexit()
-        assignment, cost = Juliafunctions.Hungarian.hungarian(distances)
-
-        # ash.print_time_rel(timestampA, modulename='julia hungarian')
-        # timestampA = time.time()
-        # Removing zeros and offsetting by 1 (Julia 1-indexing)
-        final_assignment = assignment[assignment != 0] - 1
-
-        # final_assignment = scipy_hungarian(A,B)
-
-    except:
-        print("Problem running Julia Hungarian function. Trying scipy instead.")
-
-        ashexit()
-
-        final_assignment = scipy_hungarian(A, B)
-
-    return final_assignment
-
-
 # Hungarian reorder algorithm
 # From RMSD
 def reorder_hungarian_scipy(p_atoms, q_atoms, p_coord, q_coord):
@@ -2932,50 +2855,6 @@ def reorder_hungarian_scipy(p_atoms, q_atoms, p_coord, q_coord):
         view = scipy_hungarian(A_coord, B_coord)
         view_reorder[p_atom_idx] = q_atom_idx[view]
     # print("view_reorder:", view_reorder)
-    return view_reorder
-
-
-def reorder_hungarian_julia(p_atoms, q_atoms, p_coord, q_coord):
-    """
-    Re-orders the input atom list and xyz coordinates using the Hungarian
-    method (using optimized column results)
-
-    Parameters
-    ----------
-    p_atoms : array
-        (N,1) matrix, where N is points holding the atoms' names
-    p_atoms : array
-        (N,1) matrix, where N is points holding the atoms' names
-    p_coord : array
-        (N,D) matrix, where N is points and D is dimension
-    q_coord : array
-        (N,D) matrix, where N is points and D is dimension
-
-    Returns
-    -------
-    view_reorder : array
-             (N,1) matrix, reordered indexes of atom alignment based on the
-             coordinates of the atoms
-
-    """
-
-    # Find unique atoms
-    unique_atoms = np.unique(p_atoms)
-    print("unique_atoms: ", unique_atoms)
-    # generate full view from q shape to fill in atom view on the fly
-    view_reorder = np.zeros(q_atoms.shape, dtype=int)
-    view_reorder -= 1
-    print("view_reorder: ", view_reorder)
-    for atom in unique_atoms:
-        p_atom_idx, = np.where(p_atoms == atom)
-        q_atom_idx, = np.where(q_atoms == atom)
-
-        A_coord = p_coord[p_atom_idx]
-        B_coord = q_coord[q_atom_idx]
-
-        view = hungarian_julia(A_coord, B_coord)
-        view_reorder[p_atom_idx] = q_atom_idx[view]
-
     return view_reorder
 
 

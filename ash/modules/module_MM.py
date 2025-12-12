@@ -3,7 +3,7 @@ import time
 import numpy as np
 
 import ash.constants
-from ash.functions.functions_general import ashexit, blankline, print_time_rel, BC, load_julia_interface
+from ash.functions.functions_general import ashexit, blankline, print_time_rel, BC
 from ash.modules.module_coords import distance
 from ash.modules.module_theory import Theory
 
@@ -192,56 +192,28 @@ class NonBondedTheory(Theory):
         CheckpointTime = time.time()
         # See speed-tests at /home/bjornsson/pairpot-test
 
-        if self.codeversion == "julia":
-            if self.printlevel >= 2:
-                print("Using Julia for fast sigmaij and epsij array creation")
 
-            print("Loading Julia")
-            try:
-                Juliafunctions = load_julia_interface()
-            except:
-                print("Problem loading Julia")
-                ashexit()
-            # Do pairpot array for whole system
-            if len(actatoms) == 0:
-                print("Calculating pairpotential array for whole system")
-
-                self.sigmaij, self.epsij = Juliafunctions.pairpot_full_julia(self.numatoms, self.atomtypes,
-                                                                             self.LJpairpotdict, qmatoms)
-            else:
-                #    #or only for active region
-                print("Calculating pairpotential array for active region only")
-                # pairpot_active(numatoms,atomtypes,LJpydict,qmatoms,actatoms)
-                print("Numatoms:", self.numatoms)
-                # print("self.atomtypes", self.atomtypes)
-                print("qmatoms", qmatoms)
-                # print("actatoms", actatoms)
-                self.sigmaij, self.epsij = Juliafunctions.pairpot_active_julia(self.numatoms, self.atomtypes,
-                                                                               self.LJpairpotdict, qmatoms, actatoms)
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
-        elif self.codeversion == "py":
-            if self.printlevel >= 2:
-                print("Using Python version for array creation")
-                print("Does not yet skip frozen-frozen atoms...to be fixed")
-                # Todo: add frozen-frozen atoms skip
-            # Update: Only doing half of array
-            for i in range(self.numatoms):
-                for j in range(i + 1, self.numatoms):
-                    # Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
-                    # if all(x in qmatoms for x in (i, j)) == True:
-                    #
-                    if i in qmatoms and j in qmatoms:
-                        # print("Skipping i-j pair", i,j, " as these are QM atoms")
-                        continue
-                    elif (self.atomtypes[i], self.atomtypes[j]) in self.LJpairpotdict:
-                        self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][0]
-                        self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][1]
-                    elif (self.atomtypes[j], self.atomtypes[i]) in self.LJpairpotdict:
-                        self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
-                        self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
-        else:
-            print("unknown codeversion")
-            ashexit()
+        if self.printlevel >= 2:
+            print("Using Python version for array creation")
+            print("Does not yet skip frozen-frozen atoms...to be fixed")
+            # Todo: add frozen-frozen atoms skip
+        # Update: Only doing half of array
+        for i in range(self.numatoms):
+            for j in range(i + 1, self.numatoms):
+                # Skipping if i-j pair in qmatoms list. I.e. not doing QM-QM LJ calc.
+                # if all(x in qmatoms for x in (i, j)) == True:
+                #
+                if i in qmatoms and j in qmatoms:
+                    # print("Skipping i-j pair", i,j, " as these are QM atoms")
+                    continue
+                elif (self.atomtypes[i], self.atomtypes[j]) in self.LJpairpotdict:
+                    self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][0]
+                    self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][1]
+                elif (self.atomtypes[j], self.atomtypes[i]) in self.LJpairpotdict:
+                    self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
+                    self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
+
 
         if self.printlevel >= 2:
             # print("self.sigmaij ({}) : {}".format(len(self.sigmaij), self.sigmaij))
@@ -372,48 +344,6 @@ class NonBondedTheory(Theory):
                 print("Fortran library LJCoulombv2 not found! Make sure you have run the installation script.")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy = \
                 LJCoulombv2(current_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
-        elif self.codeversion == 'julia':
-            if self.printlevel >= 2:
-                print("Using fast Julia version, v1")
-            try:
-                Juliafunctions = load_julia_interface()
-            except:
-                print("Problem loading Julia")
-                print("Problem importing Julia")
-                print("Make sure Julia is installed and Python-Julia module available")
-                print(
-                    "Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
-                ashexit()
-
-            # print_time_rel(CheckpointTime, modulename="NonBondedTheory:from run to just before calling ")
-            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy = \
-                Juliafunctions.LJcoulomb_julia(charges, current_coords, self.epsij, self.sigmaij)
-            # Converting to numpy array
-            self.MMGradient = np.asarray(self.MMGradient)
-            # print_time_rel(CheckpointTime, modulename="NonBondedTheoryfrom run to done julia")
-        elif self.codeversion == 'cupy':
-            if self.printlevel >= 2:
-                print("Using Cupy Python MM code (requires GPU)")
-            # Sending full coords and charges over. QM charges are set to 0.
-            if Coulomb:
-                self.Coulombchargeenergy, self.Coulombchargegradient = coulombcharge(charges, current_coords,
-                                                                                     mode="cupy")
-                if self.printlevel >= 2:
-                    print("Coulomb Energy (au):", self.Coulombchargeenergy)
-                    print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * ash.constants.harkcal)
-                    print("")
-                    # print("self.Coulombchargegradient:", self.Coulombchargegradient)
-                blankline()
-                self.MMEnergy += self.Coulombchargeenergy
-                self.MMGradient += self.Coulombchargegradient
-            # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
-            # TODO:
-            if LJ:
-                print("Warning: LJ still done on CPU")
-                self.LJenergy, self.LJgradient = LennardJones(current_coords, self.epsij, self.sigmaij)
-
-                self.MMEnergy += self.LJenergy
-                self.MMGradient += self.LJgradient
         else:
             print("Unknown version of MM code")
             ashexit()
@@ -707,18 +637,6 @@ def coulombcharge(charges, coords, mode="numpy"):
     if mode == "numpy":
         print("Calling coulombcharge_np")
         return coulombcharge_np(charges, coords)
-    elif mode == "cupy":
-        print("Calling coulombcharge_cupy")
-        return coulombcharge_cupy(charges, coords)
-    elif mode == "julia":
-        print("Calling coulombcharge_julia")
-        print("Loading Julia")
-        try:
-            Juliafunctions = load_julia_interface()
-        except:
-            print("Problem loading Julia")
-            ashexit()
-        return Juliafunctions.coulomb_julia(charges, coords)
     else:
         print("Unknown mode for coulombcharge")
         ashexit()

@@ -1,15 +1,12 @@
 import os
+import shutil
 import sys
-import numpy as np
 import time
 from functools import wraps
-import math
-import shutil
-import re
-import atexit
+
+import numpy as np
 
 import ash.settings_ash
-from ash import ashpath
 
 # ANSI colors: http://jafrog.com/2013/11/23/colors-in-terminal.html
 if ash.settings_ash.settings_dict["use_ANSI_color"] is True:
