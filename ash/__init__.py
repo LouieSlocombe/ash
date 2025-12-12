@@ -279,9 +279,6 @@ from .interfaces.interface_plumed import plumed_ASH, plumed_MTD_analyze, plumed_
 # NOTE: module_solvation.py or module_solvation2.py To be cleaned up
 import ash.functions.functions_solv
 
-# Molcrys
-from .modules.module_molcrys import molcrys, Fragmenttype
-
 # Geometry optimization
 from .functions.functions_optimization import SimpleOpt, BernyOpt
 from .interfaces.interface_dlfind import DLFIND_optimizer
