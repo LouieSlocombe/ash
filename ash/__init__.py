@@ -293,7 +293,6 @@ from .modules.module_PES_rewrite import (PhotoElectron,
                                          Read_old_PES_results)
 
 # Workflows, benchmarking etc
-import ash.modules.module_workflows
 from .modules.module_highlevel_workflows import (ORCA_CC_CBS_Theory,
                                                  Reaction_FCI_Analysis,
                                                  make_ICE_theory,
@@ -314,8 +313,6 @@ from .modules.module_workflows import (ReactionEnergy,
                                        AutoNonAufbau,
                                        ExcitedStateSCFOptimizer,
                                        TDDFT_vib_ave)
-
-from .modules.module_benchmarking import run_benchmark
 
 # Small helper tools
 from .interfaces.interface_small_helpers import create_adaptive_minimal_basis_set
