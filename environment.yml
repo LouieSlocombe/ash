@@ -12,8 +12,6 @@ dependencies:
   - matplotlib
   - parmed
   - plumed
-  - pyjuliacall
-  - julia
   - mdanalysis
   - ase
   - xtb
