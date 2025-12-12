@@ -320,12 +320,6 @@ from .modules.module_benchmarking import run_benchmark
 # Small helper tools
 from .interfaces.interface_small_helpers import create_adaptive_minimal_basis_set
 
-# Machine-learning tools
-from .modules.module_machine_learning import create_ML_training_data, Ml_print_model_stats
-
-# To be deleted
-Mlatom_print_model_stats = Ml_print_model_stats
-
 # Plotting
 from .modules.module_plotting import reactionprofile_plot, contourplot, plot_Spectrum, MOplot_vertical, ASH_plot
 
