@@ -1,19 +1,20 @@
 from ash import *
 
+
 def test_geometric_dummy():
-    #Define coordinate string
-    coords="""
+    # Define coordinate string
+    coords = """
     O       -1.377626260      0.000000000     -1.740199718
     H       -1.377626260      0.759337000     -1.144156718
     H       -1.377626260     -0.759337000     -1.144156718
     """
-    #Defining fragment
-    H2Ofragment=Fragment(coordsstring=coords,charge=0,mult=1)
+    # Defining fragment
+    H2Ofragment = Fragment(coordsstring=coords, charge=0, mult=1)
 
-    #Defining xTB theory
+    # Defining xTB theory
     zerotheorycalc = xTBTheory()
 
-    #Optimize with xTB theory
+    # Optimize with xTB theory
     result = Optimizer(fragment=H2Ofragment, theory=zerotheorycalc)
 
     if result.energy == 0.0:
