@@ -1,9 +1,4 @@
-"""
-ASH - A MULTISCALE MODELLING PROGRAM
-R. Bjornsson
-"""
 # Python libraries
-import numpy as np
 import sys
 import atexit
 import pathlib
@@ -13,10 +8,6 @@ import glob
 # Getting ASH-path
 ashpath = str(pathlib.Path(__file__).parent.resolve())
 print("ashpath:", ashpath)
-###############
-# ASH modules
-###############
-# import ash
 # Adding modules,interfaces directories to sys.path
 sys.path.insert(0, ashpath)
 print("Sys path:", sys.path)
