@@ -1923,7 +1923,7 @@ def linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad):
     for i in range(0, 3):
         for j in range(0, 3):
             B[i, j] = -1 * QLdistance * (Mcoord[i] - Qcoord[i]) * (Mcoord[j] - Qcoord[j]) / (
-                        MQdistance * MQdistance * MQdistance)
+                    MQdistance * MQdistance * MQdistance)
     for i in range(0, 3):
         B[i, i] = B[i, i] + QLdistance / MQdistance
     for i in range(0, 3):

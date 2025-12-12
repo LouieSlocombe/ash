@@ -920,7 +920,7 @@ def thermochemcalc(vfreq, atoms, fragment, multiplicity, temp=298.15, pressure=1
                 sigma_r = symmetry_number
 
             q_r = (math.pi ** (1 / 2) / sigma_r) * (temp ** (3 / 2)) / (
-                        (rot_temps_x * rot_temps_y * rot_temps_z) ** (1 / 2))
+                    (rot_temps_x * rot_temps_y * rot_temps_z) ** (1 / 2))
             S_rot = ash.constants.R_gasconst * (math.log(q_r) + 1.5)
             E_rot = 1.5 * ash.constants.R_gasconst * temp
         TS_rot = temp * S_rot
@@ -1941,7 +1941,7 @@ def S_vib(freqs, T):
     S_vib = 0.0
     for vibtemp in vibtemps:
         S_vib += ash.constants.R_gasconst * (vibtemp / T) / (
-                    math.exp(vibtemp / T) - 1) - ash.constants.R_gasconst * math.log(1 - math.exp(-1 * vibtemp / T))
+                math.exp(vibtemp / T) - 1) - ash.constants.R_gasconst * math.log(1 - math.exp(-1 * vibtemp / T))
         TS_vib_final = S_vib * T
     return TS_vib_final
 
@@ -1963,7 +1963,7 @@ def S_vib_QRRHO_Truhlar(freqs, T, lowfreq_thresh=100):
         vibtemp = (f * ash.constants.c * ash.constants.h_planck_hartreeseconds) / ash.constants.R_gasconst
         print("vibtemp:", vibtemp)
         TS_vib_f = T * (ash.constants.R_gasconst * (vibtemp / T) / (
-                    math.exp(vibtemp / T) - 1) - ash.constants.R_gasconst * math.log(1 - math.exp(-1 * vibtemp / T)))
+                math.exp(vibtemp / T) - 1) - ash.constants.R_gasconst * math.log(1 - math.exp(-1 * vibtemp / T)))
         TS_vib_final += TS_vib_f
         print("TS_vib_final:", TS_vib_final)
 
@@ -1982,13 +1982,13 @@ def S_vib_QRRHO_Grimme(freqs, T, omega_0=100, I_av=None):
         # Vib. temp and TS_vib for freq f
         vibtemp = (f * ash.constants.c * ash.constants.h_planck_hartreeseconds) / ash.constants.R_gasconst
         TS_vib_f = T * (ash.constants.R_gasconst * (vibtemp / T) / (
-                    math.exp(vibtemp / T) - 1) - ash.constants.R_gasconst * math.log(1 - math.exp(-1 * vibtemp / T)))
+                math.exp(vibtemp / T) - 1) - ash.constants.R_gasconst * math.log(1 - math.exp(-1 * vibtemp / T)))
         # Rotational contribution with same freq f
         m_si = (ash.constants.h_planck * ash.constants.h_planck / (8 * math.pi * math.pi * f * ash.constants.hc))
         mp_si = m_si * I_av / (m_si + I_av)
         TS_rot_f_kcal = T * ash.constants.R_gasconst_kcalK * (0.5 + math.log(math.sqrt(
             8 * math.pi * math.pi * math.pi * mp_si * ash.constants.BOLTZMANN * T / (
-                        ash.constants.h_planck * ash.constants.h_planck))))
+                    ash.constants.h_planck * ash.constants.h_planck))))
         TS_rot_f_au = TS_rot_f_kcal / ash.constants.hartokcal  # Converting from kcal/mol to a.u.
         w = 1 / (1 + pow(omega_0 / f, 4))  # Weighting function
         # Regular RRHO: TS_vib_final+=TS_vib_f
@@ -2264,7 +2264,7 @@ def project_rot_and_trans(coords, mass, Hessian):
     coords = coords.copy().reshape(-1, 3)
     na = coords.shape[0]
     wavenumber_scaling = 1e10 * np.sqrt(ash.constants.hartokj / ash.constants.bohr2nm ** 2) / (
-                2 * np.pi * ash.constants.c * 0.01)
+            2 * np.pi * ash.constants.c * 0.01)
     TotDOF = 3 * na
 
     # mass weighted Hessian matrix

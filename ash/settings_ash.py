@@ -1,6 +1,6 @@
+import configparser
 import os
 import sys
-import configparser
 from pathlib import Path
 
 import ash

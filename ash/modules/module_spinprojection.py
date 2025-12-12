@@ -101,7 +101,7 @@ class SpinProjectionTheory:
         print("High-spin state (M_S = {}) energy: {}".format((self.mult_1 - 1) / 2, HSenergy))
         print("Broken-symmetry state (M_S = {}) energy: {}".format((self.mult_2 - 1) / 2, BSenergy))
         print("Direct naive energy difference: {} Eh, {} kcal/mol, {} cm-1".format(HSenergy - BSenergy, (
-                    HSenergy - BSenergy) * ash.constants.harkcal, (HSenergy - BSenergy) * ash.constants.hartocm))
+                HSenergy - BSenergy) * ash.constants.harkcal, (HSenergy - BSenergy) * ash.constants.hartocm))
         print("<S**2>(High-Spin):", HS_S2)
         print("<S**2>(BS):", BS_S2)
         if BSenergy < HSenergy:
@@ -125,9 +125,9 @@ class SpinProjectionTheory:
         # Lande formula: E(S) = -J[S(S+1)-SA(SA+1)-SB(SB+1)]
         # Multiple of J for HS and LS states
         Jspinmultiple_HS = self.Spin_HS * (self.Spin_HS + 1) - self.Spin_A * (self.Spin_A + 1) - self.Spin_B * (
-                    self.Spin_B + 1)
+                self.Spin_B + 1)
         Jspinmultiple_LS = self.Spin_LS * (self.Spin_LS + 1) - self.Spin_A * (self.Spin_A + 1) - self.Spin_B * (
-                    self.Spin_B + 1)
+                self.Spin_B + 1)
         # Energy difference between HS and LS in multiples of J
         Jmultiple_HSLS = Jspinmultiple_HS - Jspinmultiple_LS
         print("Jmultiple_HSLS:", Jmultiple_HSLS)

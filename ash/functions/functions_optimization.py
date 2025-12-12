@@ -1,15 +1,16 @@
-import numpy as np
-import time
 import os
+import time
+
+import numpy as np
 
 import ash.constants
-from ash.functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC,listdiff
-from ash.modules.module_coords import write_xyzfile
+from ash.functions.functions_general import ashexit, blankline, print_time_rel_and_tot, BC, listdiff
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_coords import print_coords_for_atoms
+from ash.modules.module_coords import write_xyzfile
 
 
-#Root mean square of numpy array, e.g. gradient
+# Root mean square of numpy array, e.g. gradient
 def RMS_G(grad):
     sumsq = 0
     count = 0
@@ -20,105 +21,107 @@ def RMS_G(grad):
     rms = np.sqrt(sumsq / count)
     return rms
 
-#Max abs value
+
+# Max abs value
 def Max_G(grad):
-    maxg=abs(max(grad.min(), grad.max(), key=abs))
+    maxg = abs(max(grad.min(), grad.max(), key=abs))
     return maxg
 
+
 def write_xyz_trajectory(file, coords, elems, titleline):
-    with open (file, 'a') as f:
-        f.write(str(len(elems))+'\n')
-        f.write('Energy: '+str(titleline)+'\n')
-        for el,c in zip(elems,coords):
-            line="{:4} {:12.6f} {:12.6f} {:12.6f}".format(el,c[0], c[1], c[2])
-            f.write(line+'\n')
+    with open(file, 'a') as f:
+        f.write(str(len(elems)) + '\n')
+        f.write('Energy: ' + str(titleline) + '\n')
+        for el, c in zip(elems, coords):
+            line = "{:4} {:12.6f} {:12.6f} {:12.6f}".format(el, c[0], c[1], c[2])
+            f.write(line + '\n')
+
 
 #########################
 # GEOMETRY OPTIMIZERS    #
 #########################
 
 
-#ASH Cartesian Optimizer function for basic usage
-def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNARR-LBFGS', maxiter=50, 
+# ASH Cartesian Optimizer function for basic usage
+def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNARR-LBFGS', maxiter=50,
               frozen_atoms=None, actatoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
-
     if fragment is not None:
         pass
     else:
         print("No fragment provided to optimizer")
         print("Checking if theory object contains defined fragment")
         try:
-            fragment=theory.fragment
+            fragment = theory.fragment
             print("Found theory fragment")
         except:
             print("Found no fragment in theory object either.")
             print("Exiting...")
             ashexit()
     if frozen_atoms is None:
-        frozen_atoms=[]
+        frozen_atoms = []
     if actatoms is not None:
         print("Actatoms provided:", actatoms)
-        frozen_atoms = listdiff(fragment.allatoms,actatoms)
+        frozen_atoms = listdiff(fragment.allatoms, actatoms)
 
     print_atoms_list = fragment.allatoms
 
-    #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "SimpleOpt", theory=theory)
+    # Check charge/mult
+    charge, mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "SimpleOpt", theory=theory)
 
-    #List of active vs. frozen labels
-    actfrozen_labels=[]
-    #for i in range(fragment.numatoms):
+    # List of active vs. frozen labels
+    actfrozen_labels = []
+    # for i in range(fragment.numatoms):
     #    print("i", i)
     #    if i in frozen_atoms:
     #        actfrozen_labels.append('Frozen')
     #    else:
-     #       actfrozen_labels.append('Active')
+    #       actfrozen_labels.append('Active')
 
     beginTime = time.time()
     print(BC.OKMAGENTA, BC.BOLD, "------------STARTING OPTIMIZER-------------", BC.END)
-    print_option='Small'
+    print_option = 'Small'
     print("Running Optimizer")
     print("Optimization algorithm:", optimizer)
-    if len(frozen_atoms)> 0:
+    if len(frozen_atoms) > 0:
         print("Frozen atoms:", frozen_atoms)
     blankline()
-    #Printing info and basic initalization of parameters
-    if optimizer=="SD":
+    # Printing info and basic initalization of parameters
+    if optimizer == "SD":
         print("Using very basic stupid Steepest Descent algorithm")
-        sdscaling=0.85
+        sdscaling = 0.85
         print("SD Scaling parameter:", sdscaling)
-    elif optimizer=="KNARR-LBFGS":
+    elif optimizer == "KNARR-LBFGS":
         print("Using LBFGS optimizer from Knarr by Vilhjálmur Ásgeirsson")
         print("LBFGS parameters (currently hardcoded)")
         print(LBFGS_parameters)
         reset_opt = False
-    elif optimizer=="SD2":
+    elif optimizer == "SD2":
         sdscaling = 0.01
         print("Using different SD optimizer")
         print("SD Scaling parameter:", sdscaling)
-    elif optimizer=="KNARR-FIRE":
-        time_step=FIRE_timestep
-        was_scaled=False
+    elif optimizer == "KNARR-FIRE":
+        time_step = FIRE_timestep
+        was_scaled = False
         print("FIRE Parameters for timestep:", time_step)
         print(GetFIREParam(time_step))
     else:
         print("Unknown optimizer")
         ashexit()
     print("Tolerances:  RMSG: {}  MaxG: {}  Eh/Bohr".format(RMSGtolerance, MaxGtolerance))
-    #Name of trajectory file
-    trajname="opt-trajectory.xyz"
+    # Name of trajectory file
+    trajname = "opt-trajectory.xyz"
     print("Writing XYZ trajectory file: ", trajname)
-    #Remove old trajectory file if present
+    # Remove old trajectory file if present
     try:
         os.remove(trajname)
     except:
         pass
-    #Current coordinates
-    current_coords=fragment.coords
-    elems=fragment.elems
+    # Current coordinates
+    current_coords = fragment.coords
+    elems = fragment.elems
 
-    #OPTIMIZATION LOOP
-    for step in range(1,maxiter):
+    # OPTIMIZATION LOOP
+    for step in range(1, maxiter):
         CheckpointTime = time.time()
         blankline()
         print("GEOMETRY OPTIMIZATION STEP", step)
@@ -126,38 +129,38 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNA
         print("-------------------------------------------------")
         print_coords_for_atoms(current_coords, fragment.elems, print_atoms_list)
 
-        #Running E+G theory job.
+        # Running E+G theory job.
         E, Grad = theory.run(current_coords=current_coords, elems=fragment.elems, Grad=True, charge=charge, mult=mult)
-        #print("E,", E)
-        #print("Grad,", Grad)
+        # print("E,", E)
+        # print("Grad,", Grad)
 
-        #Applying frozen atoms constraint. Setting gradient to zero on atoms
+        # Applying frozen atoms constraint. Setting gradient to zero on atoms
         if len(frozen_atoms) > 0:
             print("Applying frozen-atom constraints")
-            #Setting gradient for atoms to zero
-            for num,gradcomp in enumerate(Grad):
+            # Setting gradient for atoms to zero
+            for num, gradcomp in enumerate(Grad):
                 if num in frozen_atoms:
-                    Grad[num]=[0.0,0.0,0.0]
-        #print("Grad (after frozen constraints)", Grad)
-        #Converting to atomic forces in eV/Angstrom. Used by Knarr
-        forces_evAng=Grad * (-1) * ash.constants.hartoeV / ash.constants.bohr2ang
+                    Grad[num] = [0.0, 0.0, 0.0]
+        # print("Grad (after frozen constraints)", Grad)
+        # Converting to atomic forces in eV/Angstrom. Used by Knarr
+        forces_evAng = Grad * (-1) * ash.constants.hartoeV / ash.constants.bohr2ang
         blankline()
         print("Step: {}    Energy: {} Eh.".format(step, E))
-        if print_option=='Big':
+        if print_option == 'Big':
             blankline()
             print("Gradient (Eh/Bohr): \n{}".format(Grad))
             blankline()
-        RMSG=RMS_G(Grad)
-        MaxG=Max_G(Grad)
+        RMSG = RMS_G(Grad)
+        MaxG = Max_G(Grad)
 
-        #Write geometry to trajectory (with energy)
+        # Write geometry to trajectory (with energy)
         write_xyz_trajectory(trajname, current_coords, elems, E)
 
         # Convergence threshold check
         if RMSG < RMSGtolerance and MaxG < MaxGtolerance:
             print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, RMSGtolerance))
             print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, MaxGtolerance))
-            print(BC.OKGREEN,"Geometry optimization Converged!",BC.END)
+            print(BC.OKGREEN, "Geometry optimization Converged!", BC.END)
             write_xyz_trajectory(trajname, current_coords, elems, E)
 
             # Updating energy and coordinates of ASH fragment before ending
@@ -175,48 +178,48 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNA
         elif RMSG > RMSGtolerance and MaxG < MaxGtolerance:
             print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, RMSGtolerance))
             print("MaxG: {:3.9f}       Tolerance: {:3.9f}    YES".format(MaxG, MaxGtolerance))
-            print(BC.WARNING,"Not converged",BC.END)
+            print(BC.WARNING, "Not converged", BC.END)
         elif RMSG < RMSGtolerance and MaxG > MaxGtolerance:
             print("RMSG: {:3.9f}       Tolerance: {:3.9f}    YES".format(RMSG, RMSGtolerance))
             print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, MaxGtolerance))
-            print(BC.WARNING,"Not converged",BC.END)
+            print(BC.WARNING, "Not converged", BC.END)
         else:
             print("RMSG: {:3.9f}       Tolerance: {:3.9f}    NO".format(RMSG, RMSGtolerance))
             print("MaxG: {:3.9f}       Tolerance: {:3.9f}    NO".format(MaxG, MaxGtolerance))
-            print(BC.WARNING,"Not converged",BC.END)
+            print(BC.WARNING, "Not converged", BC.END)
 
         blankline()
-        if optimizer=='SD':
+        if optimizer == 'SD':
             print("Using Basic Steepest Descent optimizer")
             print("Scaling parameter:", sdscaling)
-            current_coords=steepest_descent(current_coords,Grad,sdscaling)
-        elif optimizer=='SD2':
+            current_coords = steepest_descent(current_coords, Grad, sdscaling)
+        elif optimizer == 'SD2':
             print("Using Basic Steepest Descent optimizer, SD2 with norm")
             print("Scaling parameter:", sdscaling)
-            current_coords=steepest_descent2(current_coords,Grad,sdscaling)
-        elif optimizer=="KNARR-FIRE":
+            current_coords = steepest_descent2(current_coords, Grad, sdscaling)
+        elif optimizer == "KNARR-FIRE":
             print("Taking FIRE step")
             # FIRE
             if step == 1 or reset_opt:
                 reset_opt = False
                 fire_param = GetFIREParam(time_step)
-                ZeroVel=np.zeros( (3*len(current_coords),1))
-                CurrentVel=ZeroVel
+                ZeroVel = np.zeros((3 * len(current_coords), 1))
+                CurrentVel = ZeroVel
             if was_scaled:
                 time_step *= 0.95
             velo, time_step, fire_param = GlobalFIRE(forces_evAng, CurrentVel, time_step, fire_param)
-            CurrentVel=velo
+            CurrentVel = velo
             step, velo = EulerStep(CurrentVel, forces_evAng, time_step)
-            CurrentVel=velo
+            CurrentVel = velo
 
-        elif optimizer=='NR':
+        elif optimizer == 'NR':
             print("disabled")
             ashexit()
-            #Identity matrix
-            #Hess_approx=np.identity(3*len(current_coords))
-            #TODO: Not active
-            #current_coords = newton_raphson(current_coords, Grad, Hess_approx)
-        elif optimizer=='KNARR-LBFGS':
+            # Identity matrix
+            # Hess_approx=np.identity(3*len(current_coords))
+            # TODO: Not active
+            # current_coords = newton_raphson(current_coords, Grad, Hess_approx)
+        elif optimizer == 'KNARR-LBFGS':
             if step == 1 or reset_opt:
                 if reset_opt == True:
                     print("Resetting optimizer")
@@ -225,16 +228,17 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNA
                 sk = []
                 yk = []
                 rhok = []
-                #Store original atomic forces (in eV/Å)
-                keepf=np.copy(forces_evAng)
+                # Store original atomic forces (in eV/Å)
+                keepf = np.copy(forces_evAng)
                 keepr = np.copy(current_coords)
-                step = TakeFDStep(theory, current_coords, LBFGS_parameters["fd_step"], forces_evAng, fragment.elems, charge, mult)
+                step = TakeFDStep(theory, current_coords, LBFGS_parameters["fd_step"], forces_evAng, fragment.elems,
+                                  charge, mult)
 
             else:
                 print("Doing LBFGS Update")
                 sk, yk, rhok = LBFGSUpdate(current_coords, keepr, forces_evAng, keepf,
                                            sk, yk, rhok, LBFGS_parameters["lbfgs_memory"])
-                keepf=np.copy(forces_evAng)
+                keepf = np.copy(forces_evAng)
                 keepr = np.copy(current_coords)
                 print("Taking LBFGS Step")
                 step, negativecurv = LBFGSStep(forces_evAng, sk, yk, rhok)
@@ -244,45 +248,46 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNA
         else:
             print("Optimizer option not supported.")
             ashexit()
-        #Take the actual step
-        #Todo: Implement maxmove-scaling here if step too large
-        current_coords=current_coords+step
-        #Write current geometry (after step) to disk as 'Current_geometry.xyz'.
+        # Take the actual step
+        # Todo: Implement maxmove-scaling here if step too large
+        current_coords = current_coords + step
+        # Write current geometry (after step) to disk as 'Current_geometry.xyz'.
         # Can be used if optimization failed, SCF convergence problemt etc.
         write_xyzfile(elems, current_coords, 'Current_geometry')
         blankline()
         print_time_rel_and_tot(CheckpointTime, beginTime, 'Opt Step')
-    print(BC.FAIL,"Optimization did not converge in {} iteration".format(maxiter),BC.END)
+    print(BC.FAIL, "Optimization did not converge in {} iteration".format(maxiter), BC.END)
 
 
-
-
-#Very basic bad steepest descent algorithm.
-#Arbitrary scaling parameter instead of linesearch
-#0.8-0.9 seems to work well for H2O
-def steepest_descent(coords, Gradient,scaling):
-    newcoords = coords - scaling*Gradient
+# Very basic bad steepest descent algorithm.
+# Arbitrary scaling parameter instead of linesearch
+# 0.8-0.9 seems to work well for H2O
+def steepest_descent(coords, Gradient, scaling):
+    newcoords = coords - scaling * Gradient
     return newcoords
 
-#Normalized forces
+
+# Normalized forces
 def steepest_descent2(coords, Gradient, scaling):
-    current_forces=Gradient * (-1) * ash.constants.hartoeV / ash.constants.bohr2ang
+    current_forces = Gradient * (-1) * ash.constants.hartoeV / ash.constants.bohr2ang
     Fu = current_forces / np.linalg.norm(current_forces)
     step = scaling * Fu
     new_config = coords + step
     return new_config
 
-#Optimizer SD, LBFGS and FIRE routines from Villi
 
-LBFGS_parameters = {'fd_step' : 0.001, 'lbfgs_memory' : 20, 'lbfgs_damping' : 1.0}
-SD_parameters = {'sd_step' : 0.001}
+# Optimizer SD, LBFGS and FIRE routines from Villi
+
+LBFGS_parameters = {'fd_step': 0.001, 'lbfgs_memory': 20, 'lbfgs_damping': 1.0}
+SD_parameters = {'sd_step': 0.001}
+
 
 # Author: Vilhjalmur Asgeirsson, 2019
-#Modified to fit ASH
+# Modified to fit ASH
 def TakeFDStep(theory, current_coords, fd_step, forces, elems, charge, mult):
     # keep config / forces
     current_forces = np.copy(forces)
-    #Current config is in Å
+    # Current config is in Å
     current_config = np.copy(current_coords)
     # Get direction of force and generate step in that direction
     Fu = current_forces / np.linalg.norm(current_forces)
@@ -294,15 +299,16 @@ def TakeFDStep(theory, current_coords, fd_step, forces, elems, charge, mult):
     E, Grad = theory.run(current_coords=new_config, elems=elems, Grad=True, charge=charge, mult=mult)
 
     # Restore previous values and store new forces
-    new_forces = Grad*(-1)*ash.constants.hartoeV/ash.constants.bohr2ang
-    new_forces_unflat=new_forces.reshape(len(new_forces)*3,-1)
-    current_forces_unflat=current_forces.reshape(len(current_forces)*3,-1)
-    Fu_unflat=Fu.reshape(len(Fu)*3,-1)
+    new_forces = Grad * (-1) * ash.constants.hartoeV / ash.constants.bohr2ang
+    new_forces_unflat = new_forces.reshape(len(new_forces) * 3, -1)
+    current_forces_unflat = current_forces.reshape(len(current_forces) * 3, -1)
+    Fu_unflat = Fu.reshape(len(Fu) * 3, -1)
     H = 1.0 / (np.dot((-new_forces_unflat + current_forces_unflat).T, Fu_unflat) / fd_step)
     # If curvature is positive - get new step
     if H > 0.0:
         step = np.multiply(H, current_forces)
     return step
+
 
 def LBFGSUpdate(R, R0, F, F0, sk, yk, rhok, memory):
     dr = R - R0
@@ -324,8 +330,8 @@ def LBFGSUpdate(R, R0, F, F0, sk, yk, rhok, memory):
 
 
 def LBFGSStep(F, sk, yk, rhok):
-    #Unflattening forces array
-    F_flat=F.reshape(len(F) * 3, -1)
+    # Unflattening forces array
+    F_flat = F.reshape(len(F) * 3, -1)
     neg_curv = False
     C = rhok[-1] * np.dot(yk[-1].T, yk[-1])
     H0 = 1.0 / C
@@ -349,12 +355,13 @@ def LBFGSStep(F, sk, yk, rhok):
 
     step = -r
 
-    #Flatten step back
-    step=step.reshape(len(F), 3)
+    # Flatten step back
+    step = step.reshape(len(F), 3)
 
     return step, neg_curv
 
-#FIRE
+
+# FIRE
 
 # Author: Vilhjalmur Asgeirsson
 
@@ -396,48 +403,49 @@ def GlobalFIRE(F, velo, dt, fire_param):
 
     return velo, dt, fire_param
 
+
 def EulerStep(velo, F, dt):
     F = F.reshape(len(F) * 3, -1)
     velo += F * dt
     step = velo * dt
 
-    #Flatten step back
-    step=step.reshape(int(len(velo)/3), 3)
+    # Flatten step back
+    step = step.reshape(int(len(velo) / 3), 3)
     return step, velo
 
 
 #########################
 # PYBERNY Optimization interface.
 # Has internal coordinates
-#PyBerny: https://github.com/jhrmnn/pyberny/blob/master/README.md
-#Installed via pip
-#Limitations: No constraints or frozen atoms
-#Todo: Add active-region option like geometric
+# PyBerny: https://github.com/jhrmnn/pyberny/blob/master/README.md
+# Installed via pip
+# Limitations: No constraints or frozen atoms
+# Todo: Add active-region option like geometric
 ########################
 
-def BernyOpt(theory,fragment, charge=None, mult=None):
+def BernyOpt(theory, fragment, charge=None, mult=None):
     blankline()
     print("Beginning Py-Berny Optimization")
-    #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BernyOpt", theory=theory)
+    # Check charge/mult
+    charge, mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BernyOpt", theory=theory)
     try:
         from berny import Berny, geomlib
     except:
         blankline()
-        print(BC.FAIL,"pyberny module not found!", BC.END)
-        print(BC.WARNING,"Either install pyberny using pip:\n pip install pyberny\n "
-                         "or manually from Github (https://github.com/jhrmnn/pyberny)", BC.END)
+        print(BC.FAIL, "pyberny module not found!", BC.END)
+        print(BC.WARNING, "Either install pyberny using pip:\n pip install pyberny\n "
+                          "or manually from Github (https://github.com/jhrmnn/pyberny)", BC.END)
         ashexit(code=9)
     print("See: https://github.com/jhrmnn/pyberny")
-    #Options: Berny(ethanol, steprms=0.01, stepmax=0.05, maxsteps=5)
-    optimizer = Berny(geomlib.Geometry(fragment.elems,fragment.coords))
+    # Options: Berny(ethanol, steprms=0.01, stepmax=0.05, maxsteps=5)
+    optimizer = Berny(geomlib.Geometry(fragment.elems, fragment.coords))
     for geom in optimizer:
         # get energy and gradients for geom
         E, Grad = theory.run(current_coords=geom.coords, elems=fragment.elems, Grad=True, charge=charge, mult=mult)
-        optimizer.send((E,Grad))
+        optimizer.send((E, Grad))
     print("BernyOpt Geometry optimization converged!")
-    #Updating energy and coordinates of ASH fragment before ending
+    # Updating energy and coordinates of ASH fragment before ending
     fragment.set_energy(E)
-    print("Final optimized energy:",  fragment.energy)
-    fragment.replace_coords(fragment.elems,geom.coords)
+    print("Final optimized energy:", fragment.energy)
+    fragment.replace_coords(fragment.elems, geom.coords)
     blankline()

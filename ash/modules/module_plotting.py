@@ -193,7 +193,7 @@ class ASH_plot():
         if surfacedictionary is None:
             # If Python lists
             if (type(x_list) != list and type(x_list) != np.ndarray) or (
-            (type(y_list) != list and type(y_list) != np.ndarray)):
+                    (type(y_list) != list and type(y_list) != np.ndarray)):
                 print(BC.FAIL,
                       "Please provide either a valid x_list and y_list (can be Python lists or Numpy arrays) or a surfacedictionary (Python dict)",
                       BC.END)

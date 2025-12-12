@@ -2,23 +2,23 @@
 # SOLVSHELL MODULE (PART OF ASH) #
 #####################
 # For now only the snapshot-part. Will read snapshots from QM/MM MD Tcl-Chemshell run.
-import numpy as np
-import time
-import statistics
-import shutil
-import os
-import sys
-import multiprocessing as mp
 import glob
+import multiprocessing as mp
+import os
+import shutil
+import statistics
+import sys
+import time
 
+import numpy as np
+
+import ash.constants
 import ash.functions.functions_solv
+import ash.settings_solvation
 from ash.functions.functions_general import blankline, BC, listdiff, print_time_rel_and_tot, print_line_with_mainheader, \
     print_line_with_subheader1, ashexit
-from ash.modules.module_coords import read_fragfile_xyz
 from ash.interfaces.interface_ORCA import run_inputfiles_in_parallel, finalenergiesgrab, run_orca_SP_ORCApar
-import ash.settings_solvation
-import ash.constants
-
+from ash.modules.module_coords import read_fragfile_xyz
 
 beginTime = time.time()
 CheckpointTime = time.time()
