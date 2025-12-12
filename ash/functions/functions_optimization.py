@@ -7,7 +7,6 @@ from ash.functions.functions_general import ashexit, blankline,print_time_rel_an
 from ash.modules.module_coords import write_xyzfile
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_coords import print_coords_for_atoms
-#import ash
 
 
 #Root mean square of numpy array, e.g. gradient

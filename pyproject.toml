@@ -20,7 +20,7 @@ requires = ["setuptools >=61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ['ash*', 'ash.external', 'ash.functions','ash.interfaces','ash.knarr','ash.modules','ash.tests']
+include = ['ash*', 'ash.external', 'ash.functions','ash.interfaces','ash.modules','ash.tests']
 
 [tool.setuptools.package-data]
 "*" = ["*.*"] #

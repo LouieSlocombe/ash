@@ -266,9 +266,6 @@ from .modules.module_QMMM import (QMMMTheory,
                                   compute_decomposed_QM_MM_energy)
 from .modules.module_polembed import PolEmbedTheory
 
-# Knarr
-from .interfaces.interface_knarr import NEB, NEBTS, interpolation_geodesic
-
 # VMD
 from .interfaces.interface_VMD import write_VMD_script_cube
 
