@@ -1,24 +1,27 @@
-import numpy as np
-import time
-import shutil
 import os
+import shutil
+import time
 
-import ash.modules.module_coords
-from ash.functions.functions_general import ashexit, print_time_rel_and_tot,print_time_rel,blankline,printdebug,BC,uniq
-from ash.interfaces.interface_ORCA import grabatomcharges_ORCA,chargemodel_select
-import ash.interfaces.interface_ORCA
-from ash.interfaces.interface_xtb import grabatomcharges_xTB
+import numpy as np
+
 import ash.functions.functions_molcrys
-#import ash
+import ash.interfaces.interface_ORCA
+import ash.modules.module_coords
 import ash.settings_ash
 from ash.functions.functions_elstructure import DDEC_calc
+from ash.functions.functions_general import ashexit, print_time_rel_and_tot, print_time_rel, blankline, printdebug, BC, \
+    uniq
+from ash.interfaces.interface_ORCA import grabatomcharges_ORCA, chargemodel_select
+from ash.interfaces.interface_xtb import grabatomcharges_xTB
 
-origtime=time.time()
-currtime=time.time()
+origtime = time.time()
+currtime = time.time()
+
 
 # Fragment-type class
 class Fragmenttype:
     instances = []
+
     def __init__(self, name, formulastring, charge=None, mult=None):
         self.Name = name
         self.Formula = formulastring
@@ -29,32 +32,37 @@ class Fragmenttype:
         self.mass = ash.modules.module_coords.totmasslist(self.Atoms)
         self.Charge = charge
         self.Mult = mult
-        self.charge=charge
-        self.mult=mult
-        self.fraglist= []
-        self.clusterfraglist= []
-        #Keeping track of molmoms, voldict in case of DDEC
-        self.molmoms=[]
-        self.voldict=None
-        self.r0list=[]
-        self.epsilonlist=[]
-        self.atomtypelist=[]
+        self.charge = charge
+        self.mult = mult
+        self.fraglist = []
+        self.clusterfraglist = []
+        # Keeping track of molmoms, voldict in case of DDEC
+        self.molmoms = []
+        self.voldict = None
+        self.r0list = []
+        self.epsilonlist = []
+        self.atomtypelist = []
 
-        #Current atom charges defined for fragment. Charges ordered according to something
-        self.charges=[]
-        #List of lists: All atom charges that have been defined for fragment. First the gasfrag, then from SP-loop etc.
-        self.all_atomcharges=[]
+        # Current atom charges defined for fragment. Charges ordered according to something
+        self.charges = []
+        # List of lists: All atom charges that have been defined for fragment. First the gasfrag, then from SP-loop etc.
+        self.all_atomcharges = []
         Fragmenttype.instances.append(self.Name)
-    def change_name(self, new_name): # note that the first argument is self
-        self.name = new_name # access the class attribute with the self keyword
-    def add_fraglist(self, atomlist): # note that the first argument is self
-        self.fraglist.append(atomlist) # access the class attribute with the self keyword
-    def add_clusterfraglist(self, atomlist): # note that the first argument is self
-        self.clusterfraglist.append(atomlist) # access the class attribute with the self keyword
+
+    def change_name(self, new_name):  # note that the first argument is self
+        self.name = new_name  # access the class attribute with the self keyword
+
+    def add_fraglist(self, atomlist):  # note that the first argument is self
+        self.fraglist.append(atomlist)  # access the class attribute with the self keyword
+
+    def add_clusterfraglist(self, atomlist):  # note that the first argument is self
+        self.clusterfraglist.append(atomlist)  # access the class attribute with the self keyword
         self.flat_clusterfraglist = [item for sublist in self.clusterfraglist for item in sublist]
-    def add_charges(self,chargelist):
+
+    def add_charges(self, chargelist):
         self.all_atomcharges.append(chargelist)
-        self.charges=chargelist
+        self.charges = chargelist
+
     def print_infofile(self, filename='fragmenttype-info.txt'):
         print("Printing fragment-type information to disk:", filename)
         with open(filename, 'w') as outfile:
@@ -89,22 +97,24 @@ class Fragmenttype:
             outfile.write("Flat Cluster fraglist: {} \n".format(self.flat_clusterfraglist))
 
 
-def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=1, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF_modH', LJHparameters=[0.0,0.0], auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere',
-            supercell_expansion=[3,3,3]):
-    module_init_time=time.time()
-    banner="""
+def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_angles=None, fragmentobjects=[],
+            theory=None, numcores=1, chargemodel='',
+            clusterradius=None, shortrangemodel='UFF_modH', LJHparameters=[0.0, 0.0], auto_connectivity=False,
+            simple_supercell=False, shiftasymmunit=False, cluster_type='sphere',
+            supercell_expansion=[3, 3, 3]):
+    module_init_time = time.time()
+    banner = """
     THE
 ╔╦╗╔═╗╦  ╔═╗╦═╗╦ ╦╔═╗
 ║║║║ ║║  ║  ╠╦╝╚╦╝╚═╗
 ╩ ╩╚═╝╩═╝╚═╝╩╚═ ╩ ╚═╝
     MODULE
     """
-    #ash header now done in settings_ash.init()
-    #print_ash_header()
+    # ash header now done in settings_ash.init()
+    # print_ash_header()
     print(banner)
 
-    #TODO: After more testing auto_connectivity by default to True
+    # TODO: After more testing auto_connectivity by default to True
     print("Auto_connectivity setting (auto_connectivity keyword) is set to: ", auto_connectivity)
     print("Do auto_connectivity=False to turn off.")
     print("Do auto_connectivity=True to turn on.")
@@ -116,112 +126,114 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     origtime = time.time()
     currtime = time.time()
 
-
-    #INPUT-OPTION: CIF, XTL, XYZ
+    # INPUT-OPTION: CIF, XTL, XYZ
     if cif_file is not None:
         blankline()
-        #Read CIF-file
+        # Read CIF-file
         print("Reading CIF file:", cif_file)
         blankline()
-        cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops,cellunits=ash.functions.functions_molcrys.read_ciffile(cif_file)
+        cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops, cellunits = ash.functions.functions_molcrys.read_ciffile(
+            cif_file)
 
-        #Shifting fractional coordinates to make sure we don't have atoms on edges
+        # Shifting fractional coordinates to make sure we don't have atoms on edges
         if shiftasymmunit is True:
             print("Shifting asymmetric unit")
             print("not ready")
             ashexit()
-            shift=[-0.3,-0.3,-0.3]
-            asymmcoords=ash.functions.functions_molcrys.shift_fractcoords(asymmcoords,shift)
+            shift = [-0.3, -0.3, -0.3]
+            asymmcoords = ash.functions.functions_molcrys.shift_fractcoords(asymmcoords, shift)
 
-        #Checking if cellunits is None or integer. If none then "_cell_formula_units" not in CIF-file and then unitcell should already be filled
+        # Checking if cellunits is None or integer. If none then "_cell_formula_units" not in CIF-file and then unitcell should already be filled
         if cellunits is None:
-            print("Unitcell is full (based on lack of cell_formula_units_Z line in CIF-file). Not applying symmetry operations")
-            fullcellcoords=asymmcoords
+            print(
+                "Unitcell is full (based on lack of cell_formula_units_Z line in CIF-file). Not applying symmetry operations")
+            fullcellcoords = asymmcoords
         else:
             # Create system coordinates for whole cell from asymmetric unit
             print("Filling up unitcell using symmetry operations")
-            fullcellcoords, elems = ash.functions.functions_molcrys.fill_unitcell(cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops)
+            fullcellcoords, elems = ash.functions.functions_molcrys.fill_unitcell(cell_length, cell_angles, atomlabels,
+                                                                                  elems, asymmcoords, symmops)
             print("Full-cell coords", len(fullcellcoords))
             numasymmunits = len(fullcellcoords) / len(asymmcoords)
             print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
             print("Number of asymmetric units in whole cell:", int(numasymmunits))
 
-
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
-        #Calculating cell vectors.
-        cell_vectors=ash.functions.functions_molcrys.cellbasis(cell_angles,cell_length)
+        # Calculating cell vectors.
+        cell_vectors = ash.functions.functions_molcrys.cellbasis(cell_angles, cell_length)
         print("cell_vectors:", cell_vectors)
-        #Get orthogonal coordinates of cell
-        orthogcoords=ash.functions.functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)
+        # Get orthogonal coordinates of cell
+        orthogcoords = ash.functions.functions_molcrys.fract_to_orthogonal(cell_vectors, fullcellcoords)
         blankline()
 
     elif xtl_file is not None:
         blankline()
-        #Read XTL-file. Assuming full-cell coordinates presently
-        #TODO: Does XTL file also support asymmetric units with symm information in header?
+        # Read XTL-file. Assuming full-cell coordinates presently
+        # TODO: Does XTL file also support asymmetric units with symm information in header?
         print("Reading XTL file:", xtl_file)
         blankline()
-        cell_length,cell_angles,elems,fullcellcoords=ash.functions.functions_molcrys.read_xtlfile(xtl_file)
+        cell_length, cell_angles, elems, fullcellcoords = ash.functions.functions_molcrys.read_xtlfile(xtl_file)
 
-        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
+        # cell_vectors=cellparamtovectors(cell_length,cell_angles)
 
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
 
-        #Calculating cell vectors.
+        # Calculating cell vectors.
         # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
 
-        #Not sure why we were transposing here. Bad for Ru-allyl
-        #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
-        cell_vectors=ash.functions.functions_molcrys.cellbasis(cell_angles,cell_length)
+        # Not sure why we were transposing here. Bad for Ru-allyl
+        # cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        cell_vectors = ash.functions.functions_molcrys.cellbasis(cell_angles, cell_length)
 
         print("cell_vectors:", cell_vectors)
-        #Get orthogonal coordinates of cell
-        orthogcoords=ash.functions.functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)
+        # Get orthogonal coordinates of cell
+        orthogcoords = ash.functions.functions_molcrys.fract_to_orthogonal(cell_vectors, fullcellcoords)
         blankline()
 
-        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-        #ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+        # Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+        # ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
     elif xyz_file is not None:
         print("WARNING. This option is not well tested. XYZ-file must contain all coordinates of cell.")
         blankline()
-        #Read XYZ-file. Assuming file contains full-cell real-space coordinates
+        # Read XYZ-file. Assuming file contains full-cell real-space coordinates
         print("Reading XYZ file (assuming real-space coordinates in Angstrom):", xyz_file)
-        elems,orthogcoords=ash.modules.module_coords.read_xyzfile(xyz_file)
+        elems, orthogcoords = ash.modules.module_coords.read_xyzfile(xyz_file)
         print("Read {} atoms from XYZ-files".format(len(orthogcoords)))
 
-        #Need to read cell_lengths and cell_angles also
+        # Need to read cell_lengths and cell_angles also
         if cell_length is None or cell_angles is None:
             print("cell_length/cell_angles is not defined. This is needed for XYZ-file option.")
             ashexit()
         blankline()
 
-        #Calculating cell vectors.
+        # Calculating cell vectors.
         # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
-        #Not sure why transposing
-        #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
-        cell_vectors=ash.functions.functions_molcrys.cellbasis(cell_angles,cell_length)
+        # Not sure why transposing
+        # cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
+        cell_vectors = ash.functions.functions_molcrys.cellbasis(cell_angles, cell_length)
         print("cell_vectors:", cell_vectors)
 
-        #TODO: Need to create fullcellcoords (fract coordinates of full cell) here
-        #TODO: Check whether orthogonal_to_fractional(cellvectors, orthogcoords) function works
-        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-        #functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+        # TODO: Need to create fullcellcoords (fract coordinates of full cell) here
+        # TODO: Check whether orthogonal_to_fractional(cellvectors, orthogcoords) function works
+        # Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+        # functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
     else:
         print("Neither CIF-file, XTL-file or XYZ-file passed to molcrys. Exiting...")
         ashexit()
 
-    orthogcoords=np.array(orthogcoords)
+    orthogcoords = np.array(orthogcoords)
     print("Reading of inputfile done")
 
-    print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
+    print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0], cell_length[1], cell_length[2], cell_angles[0],
+                                                      cell_angles[1], cell_angles[2]))
     print("Number of coords in cell: ", len(orthogcoords))
     print("Number of elements in cell: ", len(elems))
     print("Checking for duplicate atoms in cell")
 
     # NEW: check for duplicate atoms in cell
-    delatom_indices  = ash.functions.functions_molcrys.get_indices_of_repeated_rows(orthogcoords)
+    delatom_indices = ash.functions.functions_molcrys.get_indices_of_repeated_rows(orthogcoords)
     if len(delatom_indices) > 0:
         print("Duplicate atoms found in cell. Removing duplicates")
         orthogcoords = np.delete(orthogcoords, delatom_indices, axis=0)
@@ -233,24 +245,25 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Updated number of coords in cell: ", len(orthogcoords))
         print("Updated number of elements in cell: ", len(elems))
 
-    ash.modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-original")
+    ash.modules.module_coords.write_xyzfile(elems, orthogcoords, "cell_orthog-original")
 
     # Change origin to centroid of coords
-    orthogcoords=ash.modules.module_coords.change_origin_to_centroid(orthogcoords)
-    ash.modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-changedORIGIN")
+    orthogcoords = ash.modules.module_coords.change_origin_to_centroid(orthogcoords)
+    ash.modules.module_coords.write_xyzfile(elems, orthogcoords, "cell_orthog-changedORIGIN")
 
     # Final orthogcoords converted to fract (for XTL-file)
     # fullcellcoords_fract = ash.functions.functions_molcrys.orthogonal_to_fractional(cell_vectors, orthogcoords)
     # Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-    #Note: skipping if XYZ-file was used
+    # Note: skipping if XYZ-file was used
     try:
-        ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+        ash.functions.functions_molcrys.write_xtl(cell_length, cell_angles, elems, fullcellcoords,
+                                                  "complete_unitcell.xtl")
     except:
         pass
 
-    #Make simpler super-cell for cases where molecule is not in cell
-    #TODO: Not sure if need this.
-    #if simple_supercell is True:
+    # Make simpler super-cell for cases where molecule is not in cell
+    # TODO: Not sure if need this.
+    # if simple_supercell is True:
     #    print("Simple supercell is True")
     #    #exit()return extended, new_elems
     #    #cellextpars=[2,2,2]
@@ -267,38 +280,41 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #    orthogcoords=supercell_coords
     #    elems=supercell_elems
 
-    #Define fragments of unitcell. Updates mainfrag, counterfrag1 etc. object information
+    # Define fragments of unitcell. Updates mainfrag, counterfrag1 etc. object information
 
-    #Loop through different tol settings
+    # Loop through different tol settings
     if auto_connectivity == True:
-        #Sticking to 1.0 here until we find case where modification is needed.
-        #If so we can implement double-loop over both scale and tol parameters
-        chosenscale=1.0
+        # Sticking to 1.0 here until we find case where modification is needed.
+        # If so we can implement double-loop over both scale and tol parameters
+        chosenscale = 1.0
         test_tolerances = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
-        print(BC.WARNING,"Automatic connectivity determination:", BC.END)
+        print(BC.WARNING, "Automatic connectivity determination:", BC.END)
         print("Using Scale : ", chosenscale)
         print("Will loop through tolerances:", test_tolerances)
         for chosentol in test_tolerances:
             print("Current Scale", chosenscale)
             print("Current Tol: ", chosentol)
-            checkflag = ash.functions.functions_molcrys.frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
-                        scale=chosenscale, tol=chosentol)
+            checkflag = ash.functions.functions_molcrys.frag_define(orthogcoords, elems, cell_vectors,
+                                                                    fragments=fragmentobjects, cell_angles=cell_angles,
+                                                                    cell_length=cell_length,
+                                                                    scale=chosenscale, tol=chosentol)
             if checkflag == 0:
 
                 print(BC.OKMAGENTA, "A miracle occurred! Fragment assignment succeeded!", BC.END)
                 print("Final connectivity parameters are: Scale: {} and Tol: {}".format(chosenscale, chosentol))
                 print("Setting global scale and tol parameters")
-                #Should be safest option I think. To be revisited
-                ash.settings_ash.settings_dict["scale"]=chosenscale
-                ash.settings_ash.settings_dict["tol"]=chosentol
+                # Should be safest option I think. To be revisited
+                ash.settings_ash.settings_dict["scale"] = chosenscale
+                ash.settings_ash.settings_dict["tol"] = chosentol
 
                 print("")
                 break
             else:
-                print(BC.FAIL,"Fragment assignment failed. for tolerance: {} ".format(chosentol), BC.WARNING,"Trying next Tol parameter.",BC.END)
-                #Setting found fragmentlists as empty. Otherwise trouble.
+                print(BC.FAIL, "Fragment assignment failed. for tolerance: {} ".format(chosentol), BC.WARNING,
+                      "Trying next Tol parameter.", BC.END)
+                # Setting found fragmentlists as empty. Otherwise trouble.
                 for fragobject in fragmentobjects:
-                    fragobject.fraglist=[]
+                    fragobject.fraglist = []
 
         # If all test_tolerances failed.
         if checkflag == 1:
@@ -306,78 +322,82 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                   "that the cell is not missing atoms or that it contains extra atoms")
             ashexit()
     else:
-        chosenscale=ash.settings_ash.settings_dict["scale"]
-        chosentol=ash.settings_ash.settings_dict["tol"]
-        print("Determining connectivity using Scale: {} and Tol: {}".format(chosenscale,chosentol))
+        chosenscale = ash.settings_ash.settings_dict["scale"]
+        chosentol = ash.settings_ash.settings_dict["tol"]
+        print("Determining connectivity using Scale: {} and Tol: {}".format(chosenscale, chosentol))
 
-        #Using the global ASH settings (may have been modified by user)
-        checkflag = ash.functions.functions_molcrys.frag_define(orthogcoords,elems,cell_vectors,fragments=fragmentobjects, cell_angles=cell_angles, cell_length=cell_length,
-                    scale=chosenscale, tol=chosentol)
+        # Using the global ASH settings (may have been modified by user)
+        checkflag = ash.functions.functions_molcrys.frag_define(orthogcoords, elems, cell_vectors,
+                                                                fragments=fragmentobjects, cell_angles=cell_angles,
+                                                                cell_length=cell_length,
+                                                                scale=chosenscale, tol=chosentol)
         if checkflag == 0:
             print(BC.OKMAGENTA, "A miracle occurred! Fragment assignment succeeded!", BC.END)
         else:
             ashexit()
 
-
     print_time_rel_and_tot(currtime, origtime, modulename='frag_define')
-    currtime=time.time()
-
-
+    currtime = time.time()
 
     # CREATE SPHERE OR SUPERCELL!!
-    #Reorder coordinates of cell based on Hungarian algorithm
-    #TODO: Reorder so that all atoms in fragment have same internal order.
-    #TODO: Also reorder so that unit cell is easy to understand.
-    #TODO: First all mainfrags, then counterfrags ??
+    # Reorder coordinates of cell based on Hungarian algorithm
+    # TODO: Reorder so that all atoms in fragment have same internal order.
+    # TODO: Also reorder so that unit cell is easy to understand.
+    # TODO: First all mainfrags, then counterfrags ??
     if cluster_type == 'sphere':
-        #Create MM cluster here already or later
-        tempcluster_coords,tempcluster_elems=ash.functions.functions_molcrys.create_MMcluster(orthogcoords,elems,cell_vectors,clusterradius)
+        # Create MM cluster here already or later
+        tempcluster_coords, tempcluster_elems = ash.functions.functions_molcrys.create_MMcluster(orthogcoords, elems,
+                                                                                                 cell_vectors,
+                                                                                                 clusterradius)
         print_time_rel_and_tot(currtime, origtime, modulename='create_MMcluster')
-        currtime=time.time()
+        currtime = time.time()
 
-        tempcluster_coords,tempcluster_elems=ash.functions.functions_molcrys.remove_partial_fragments(tempcluster_coords,tempcluster_elems,clusterradius,fragmentobjects, scale=chosenscale, tol=chosentol)
+        tempcluster_coords, tempcluster_elems = ash.functions.functions_molcrys.remove_partial_fragments(
+            tempcluster_coords, tempcluster_elems, clusterradius, fragmentobjects, scale=chosenscale, tol=chosentol)
         print_time_rel_and_tot(currtime, origtime, modulename='remove_partial_fragments')
-        currtime=time.time()
-        ash.modules.module_coords.write_xyzfile(tempcluster_elems,tempcluster_coords,"tempcluster_coords")
+        currtime = time.time()
+        ash.modules.module_coords.write_xyzfile(tempcluster_elems, tempcluster_coords, "tempcluster_coords")
 
         if len(tempcluster_coords) == 0:
-            print(BC.FAIL,"After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.", BC.END)
+            print(BC.FAIL,
+                  "After removing all partial fragments, the Cluster fragment is empty. Something went wrong. Exiting.",
+                  BC.END)
             ashexit()
     elif cluster_type == 'supercell':
-        #Super-cell instead of sphere. Advantage: If unitcell is well-behaved then we will have no dipole problem when we cut a sphere.
-        #Disadvantage, we could have partial fragment at boundary.
-        #TODO: Check for partial fragments at boundary and clean up?? Adapt remove_partial_fragments ???
-        print(BC.WARNING,"Warning. cluster_type = supercell is untested ",BC.END)
-        tempcluster_coords,tempcluster_elems = ash.functions.functions_molcrys.cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
+        # Super-cell instead of sphere. Advantage: If unitcell is well-behaved then we will have no dipole problem when we cut a sphere.
+        # Disadvantage, we could have partial fragment at boundary.
+        # TODO: Check for partial fragments at boundary and clean up?? Adapt remove_partial_fragments ???
+        print(BC.WARNING, "Warning. cluster_type = supercell is untested ", BC.END)
+        tempcluster_coords, tempcluster_elems = ash.functions.functions_molcrys.cell_extend_frag(cell_vectors,
+                                                                                                 orthogcoords, elems,
+                                                                                                 supercell_expansion)
 
-        #TODO: Clean up partial fragments at boundary
+        # TODO: Clean up partial fragments at boundary
 
     else:
         print("unknown cluster_type")
         ashexit()
 
-
-
-
-    #Create ASH fragment object from created cluster (spherical or super-cell)
+    # Create ASH fragment object from created cluster (spherical or super-cell)
     ########################################
     blankline()
-    #TODO: Slightly ugly. Clean up at some point
+    # TODO: Slightly ugly. Clean up at some point
     print("Creating temp Cluster fragment:")
-    tempcluster=ash.Fragment(elems=tempcluster_elems, coords=tempcluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
+    tempcluster = ash.Fragment(elems=tempcluster_elems, coords=tempcluster_coords, scale=chosenscale, tol=chosentol,
+                               conncalc=True)
 
-    #Reorder cluster so that molecular fragment atoms appear in order
-    newatomindexorder=[]
+    # Reorder cluster so that molecular fragment atoms appear in order
+    newatomindexorder = []
     for fragx in tempcluster.connectivity:
-        newatomindexorder=newatomindexorder+fragx
-    cluster_elems=[tempcluster_elems[i] for i in newatomindexorder]
-    cluster_coords=tempcluster_coords[newatomindexorder]
+        newatomindexorder = newatomindexorder + fragx
+    cluster_elems = [tempcluster_elems[i] for i in newatomindexorder]
+    cluster_coords = tempcluster_coords[newatomindexorder]
 
     print("Creating new Cluster fragment:")
-    Cluster=ash.Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
+    Cluster = ash.Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
 
     # Going through found frags and identify mainfrags and counterfrags
-    #print("Connectivity fragments:", Cluster.connectivity)
+    # print("Connectivity fragments:", Cluster.connectivity)
     print("Number of Connectivity fragments:", len(Cluster.connectivity))
     for frag in Cluster.connectivity:
         el_list = [cluster_elems[i] for i in frag]
@@ -386,48 +406,46 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             if ncharge == fragmentobject.Nuccharge:
                 fragmentobject.add_clusterfraglist(frag)
 
-    #print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
-    currtime=time.time()
+    # print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
+    currtime = time.time()
     Cluster.print_system("Cluster-first.ygg")
     Cluster.write_xyzfile(xyzfilename="Cluster-first.xyz")
     print("Cluster size: ", Cluster.numatoms, "atoms")
-    #print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
-    currtime=time.time()
-
-
+    # print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
+    currtime = time.time()
 
     printdebug(fragmentobjects[0].clusterfraglist)
-    #print_time_rel_and_tot(currtime, origtime, modulename='fragment identification')
-    currtime=time.time()
-    #TODO: Reorder cluster with reflections also
+    # print_time_rel_and_tot(currtime, origtime, modulename='fragment identification')
+    currtime = time.time()
+    # TODO: Reorder cluster with reflections also
 
-    #Reorder fraglists in each fragmenttype via Hungarian algorithm.
+    # Reorder fraglists in each fragmenttype via Hungarian algorithm.
     # Ordered fraglists can then easily be used in pointchargeupdating
     for fragmentobject in fragmentobjects:
         print("Reordering fragment object: ", fragmentobject.Name)
-        ash.functions.functions_molcrys.reordercluster(Cluster,fragmentobject)
+        ash.functions.functions_molcrys.reordercluster(Cluster, fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
 
-        #Update element list in fragmentobject after reordering. Used later (DDEC)
-        fragcoords,fragelems=Cluster.get_coords_for_atoms(fragmentobject.clusterfraglist[0])
-        fragmentobject.Atoms=fragelems
-        fragmentobject.print_infofile(str(fragmentobject.Name)+'.info')
+        # Update element list in fragmentobject after reordering. Used later (DDEC)
+        fragcoords, fragelems = Cluster.get_coords_for_atoms(fragmentobject.clusterfraglist[0])
+        fragmentobject.Atoms = fragelems
+        fragmentobject.print_infofile(str(fragmentobject.Name) + '.info')
     print_time_rel_and_tot(currtime, origtime, modulename='reorder fraglists')
-    currtime=time.time()
-    #TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
+    currtime = time.time()
+    # TODO: after removing partial fragments and getting connectivity etc. Would be good to make MM cluster neutral
 
-    #Add fragmentobject-info to Cluster fragment
-    #Old slow code:
-    #Cluster.old_add_fragment_type_info(fragmentobjects)
+    # Add fragmentobject-info to Cluster fragment
+    # Old slow code:
+    # Cluster.old_add_fragment_type_info(fragmentobjects)
     Cluster.add_fragment_type_info(fragmentobjects)
 
-    #print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragment type info')
-    currtime=time.time()
-    
-    #Cluster is now almost complete, only charges missing. Print info to file
+    # print_time_rel_and_tot(currtime, origtime, modulename='Cluster fragment type info')
+    currtime = time.time()
+
+    # Cluster is now almost complete, only charges missing. Print info to file
     Cluster.print_system("Cluster-info-nocharges.ygg")
-    #print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
-    currtime=time.time()
+    # print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
+    currtime = time.time()
 
     # Create dirs to keep track of various files before QM calculations begin
     try:
@@ -437,28 +455,29 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         os.mkdir('SPloop-files')
     #########################################
 
-
-
     ################################################
     # Calculate atom charges for each gas fragment. Updates atomcharges list inside Cluster fragment
     ##################################
     if theory.__class__.__name__ == "ORCATheory":
 
-        #Using numcores in Theory object if larger than numcores in Molcrys
+        # Using numcores in Theory object if larger than numcores in Molcrys
         if theory.numcores > numcores:
-            numcores=theory.numcores
+            numcores = theory.numcores
 
         if theory.brokensym is True:
 
-            if chargemodel =="IAO":
+            if chargemodel == "IAO":
                 print("Note IAO charges on broken-symmetry solution are probably not sensible")
 
-            ash.functions.functions_molcrys.gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
-                             theory.orcablocks, numcores, brokensym=True, HSmult=theory.HSmult,
-                             atomstoflip=theory.atomstoflip)
+            ash.functions.functions_molcrys.gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir,
+                                                             theory.orcasimpleinput,
+                                                             theory.orcablocks, numcores, brokensym=True,
+                                                             HSmult=theory.HSmult,
+                                                             atomstoflip=theory.atomstoflip)
         else:
-            ash.functions.functions_molcrys.gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir, theory.orcasimpleinput,
-                             theory.orcablocks, numcores)
+            ash.functions.functions_molcrys.gasfragcalc_ORCA(fragmentobjects, Cluster, chargemodel, theory.orcadir,
+                                                             theory.orcasimpleinput,
+                                                             theory.orcablocks, numcores)
 
 
     elif theory.__class__.__name__ == "xTBTheory":
@@ -466,36 +485,35 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             os.remove("pcharge")
         except:
             pass
-        ash.functions.functions_molcrys.gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,theory.xtbdir,theory.xtbmethod,numcores)
+        ash.functions.functions_molcrys.gasfragcalc_xTB(fragmentobjects, Cluster, chargemodel, theory.xtbdir,
+                                                        theory.xtbmethod, numcores)
     else:
         print("Unsupported theory for charge-calculations in MolCrys. Options are: ORCATheory or xTBTheory")
         ashexit()
     print_time_rel_and_tot(currtime, origtime, modulename="gasfragcalc")
-    currtime=time.time()
+    currtime = time.time()
     print("Atom charge assignments in Cluster done!")
     blankline()
-    #print("Cluster:", Cluster.__dict__)
+    # print("Cluster:", Cluster.__dict__)
 
-    #Cluster is now complete. Print info to file
+    # Cluster is now complete. Print info to file
     Cluster.print_system("Cluster-info_afterGas.ygg")
     for fragmentobject in fragmentobjects:
-        fragmentobject.print_infofile(str(fragmentobject.Name)+'-info_afterGas.ygg')
+        fragmentobject.print_infofile(str(fragmentobject.Name) + '-info_afterGas.ygg')
 
-    sum_atomcharges_cluster=sum(Cluster.atomcharges)
+    sum_atomcharges_cluster = sum(Cluster.atomcharges)
     print("sum_atomcharges_cluster:", sum_atomcharges_cluster)
 
     with open("system-atomcharges", 'w') as acharges:
         for charge in Cluster.atomcharges:
             acharges.write("{} ".format(charge))
 
-
-
-    #SC-QM/MM PC loop of mainfrag for cluster
-    #Hard-coded (for now) maxiterations and charge-convergence thresholds
-    SPLoopMaxIter=10
-    RMSD_SP_threshold=0.001
+    # SC-QM/MM PC loop of mainfrag for cluster
+    # Hard-coded (for now) maxiterations and charge-convergence thresholds
+    SPLoopMaxIter = 10
+    RMSD_SP_threshold = 0.001
     blankline()
-    #TODO: Make ORCA GBW-read more transparent during SP iterations or in general
+    # TODO: Make ORCA GBW-read more transparent during SP iterations or in general
 
     # Charge-model info to add to inputfile
     chargemodelline = chargemodel_select(chargemodel)
@@ -504,15 +522,15 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     if theory.__class__.__name__ == "ORCATheory":
 
         if theory.brokensym == True:
-            #Adding UKS keyword if not already present for case AF-coupled BS-singlet to prevent RKS/RHF.
+            # Adding UKS keyword if not already present for case AF-coupled BS-singlet to prevent RKS/RHF.
             if 'UKS' not in theory.orcasimpleinput:
-                theory.orcasimpleinput=theory.orcasimpleinput+' UKS'
+                theory.orcasimpleinput = theory.orcasimpleinput + ' UKS'
         QMtheory = ash.interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir,
-                              orcasimpleinput=theory.orcasimpleinput,
-                              orcablocks=theory.orcablocks, extraline=chargemodelline)
-        #COPY LAST mainfrag orbitals here: called lastorbitals.gbw from gasfragcalc (mainfrag)
-        #Necessary to avoid broken-sym SpinFlip but should be good in general
-        shutil.copyfile('lastorbitals.gbw', QMtheory.filename+'.gbw')
+                                                            orcasimpleinput=theory.orcasimpleinput,
+                                                            orcablocks=theory.orcablocks, extraline=chargemodelline)
+        # COPY LAST mainfrag orbitals here: called lastorbitals.gbw from gasfragcalc (mainfrag)
+        # Necessary to avoid broken-sym SpinFlip but should be good in general
+        shutil.copyfile('lastorbitals.gbw', QMtheory.filename + '.gbw')
 
     elif theory.__class__.__name__ == "xTBTheory":
         QMtheory = ash.interfaces.interface_xtb.xTBTheory(xtbdir=theory.xtbdir, xtbmethod=theory.xtbmethod)
@@ -524,36 +542,36 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     Centralmainfrag = fragmentobjects[0].clusterfraglist[0]
     print("Centralmainfrag:", Centralmainfrag)
 
-    #Writing Centralmainfrag to disk as Centralmainfrag
-    with open ("Centralmainfrag", 'w') as file:
+    # Writing Centralmainfrag to disk as Centralmainfrag
+    with open("Centralmainfrag", 'w') as file:
         for i in Centralmainfrag:
-            file.write(str(i)+' ')
+            file.write(str(i) + ' ')
 
-    #Writing Centralmainfrag to disk as qmatoms
-    with open ("qmatoms", 'w') as file:
+    # Writing Centralmainfrag to disk as qmatoms
+    with open("qmatoms", 'w') as file:
         for i in Centralmainfrag:
-            file.write(str(i)+' ')
+            file.write(str(i) + ' ')
 
     blankline()
 
-    currtime=time.time()
+    currtime = time.time()
     # SP-LOOP FOR MAINFRAG
-    for SPLoopNum in range(0,SPLoopMaxIter):
+    for SPLoopNum in range(0, SPLoopMaxIter):
         blankline()
         print("This is Charge-Iteration Loop number", SPLoopNum)
-        atomcharges=[]
-        ash.modules.module_coords.print_coords_for_atoms(Cluster.coords,Cluster.elems,Centralmainfrag)
+        atomcharges = []
+        ash.modules.module_coords.print_coords_for_atoms(Cluster.coords, Cluster.elems, Centralmainfrag)
         print("")
         # Run ORCA QM/MM calculation with charge-model info
         QMMM_SP_calculation = ash.QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
                                              charges=Cluster.atomcharges, embedding='Elstat')
-        QMMM_SP_calculation.run(current_coords=Cluster.coords, elems=Cluster.elems, numcores=numcores, 
+        QMMM_SP_calculation.run(current_coords=Cluster.coords, elems=Cluster.elems, numcores=numcores,
                                 charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult)
 
         # Keeping the GBWfile
         if theory.__class__.__name__ == "ORCATheory":
-            mainfrag_gbwfile="last_mainfrag.gbw"
-            shutil.copy(QMtheory.filename+'.gbw', mainfrag_gbwfile)
+            mainfrag_gbwfile = "last_mainfrag.gbw"
+            shutil.copy(QMtheory.filename + '.gbw', mainfrag_gbwfile)
 
         # Grab atomic charges for fragment.
         if theory.__class__.__name__ == "ORCATheory":
@@ -562,93 +580,96 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 print("Need to think more about what happens here for DDEC")
                 print("Molecule should be polarized by environment but atoms should not.")
                 # Calling DDEC_calc (calls chargemol)
-                #Here providing only QMTheory object to DDEC_calc as this will be used for atomic calculations (not molecule)
+                # Here providing only QMTheory object to DDEC_calc as this will be used for atomic calculations (not molecule)
                 elemlist_mainfrag = [Cluster.elems[i] for i in Centralmainfrag]
                 print("elemlist_mainfrag: ", elemlist_mainfrag)
                 atomcharges, molmoms, voldict = DDEC_calc(elems=elemlist_mainfrag, theory=QMtheory,
                                                           ncores=numcores, DDECmodel=chargemodel,
-                                                          molecule_spinmult=fragmentobjects[0].Mult, molecule_charge=fragmentobjects[0].Charge,
-                                                          calcdir="DDEC_fragment_SPloop" + str(SPLoopNum), gbwfile=QMtheory.filename+'.gbw')
+                                                          molecule_spinmult=fragmentobjects[0].Mult,
+                                                          molecule_charge=fragmentobjects[0].Charge,
+                                                          calcdir="DDEC_fragment_SPloop" + str(SPLoopNum),
+                                                          gbwfile=QMtheory.filename + '.gbw')
             else:
                 atomcharges = grabatomcharges_ORCA(chargemodel, QMtheory.filename + '.out')
             # Keep backup of ORCA outputfile in dir SPloop-files
-            shutil.copyfile(QMtheory.filename+'.out', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.out')
-            shutil.copyfile(QMtheory.filename+'.pc', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.pc')
+            shutil.copyfile(QMtheory.filename + '.out', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.out')
+            shutil.copyfile(QMtheory.filename + '.pc', './SPloop-files/mainfrag-SPloop' + str(SPLoopNum) + '.pc')
             blankline()
         elif theory.__class__.__name__ == "xTBTheory":
             atomcharges = grabatomcharges_xTB()
 
-        print("Elements:", [Cluster.elems[i] for i in Centralmainfrag ])
-        print("atomcharges (SPloop {}) : {}".format(SPLoopNum,atomcharges))
+        print("Elements:", [Cluster.elems[i] for i in Centralmainfrag])
+        print("atomcharges (SPloop {}) : {}".format(SPLoopNum, atomcharges))
 
-
-        #Adding mainfrag charges to mainfrag--object
+        # Adding mainfrag charges to mainfrag--object
         fragmentobjects[0].add_charges(atomcharges)
 
         # Assign pointcharges to each atom of MM cluster.
-        #pointchargeupdate calls: Cluster.update_atomcharges(chargelist)
+        # pointchargeupdate calls: Cluster.update_atomcharges(chargelist)
         ash.functions.functions_molcrys.pointchargeupdate(Cluster, fragmentobjects[0], atomcharges)
         Cluster.print_system("Cluster-info_afterSP{}.ygg".format(SPLoopNum))
         fragmentobjects[0].print_infofile('mainfrag-info_afterSP{}.ygg'.format(SPLoopNum))
         blankline()
-        #print("Current charges:", fragmentobjects[0].all_atomcharges[-1])
-        #print("Previous charges:", fragmentobjects[0].all_atomcharges[-2])
-        RMSD_charges=ash.functions.functions_molcrys.rmsd_list(fragmentobjects[0].all_atomcharges[-1],fragmentobjects[0].all_atomcharges[-2])
-        print(BC.OKBLUE,"RMSD of charges: {:6.3f} in SP iteration {:6}:".format(RMSD_charges, SPLoopNum),BC.END)
+        # print("Current charges:", fragmentobjects[0].all_atomcharges[-1])
+        # print("Previous charges:", fragmentobjects[0].all_atomcharges[-2])
+        RMSD_charges = ash.functions.functions_molcrys.rmsd_list(fragmentobjects[0].all_atomcharges[-1],
+                                                                 fragmentobjects[0].all_atomcharges[-2])
+        print(BC.OKBLUE, "RMSD of charges: {:6.3f} in SP iteration {:6}:".format(RMSD_charges, SPLoopNum), BC.END)
         if RMSD_charges < RMSD_SP_threshold:
-            print("RMSD: {} is less than threshold: {}".format(RMSD_charges,RMSD_SP_threshold))
-            print(BC.OKMAGENTA,"Charges converged in SP iteration {}! SP LOOP over!".format(SPLoopNum),BC.END)
+            print("RMSD: {} is less than threshold: {}".format(RMSD_charges, RMSD_SP_threshold))
+            print(BC.OKMAGENTA, "Charges converged in SP iteration {}! SP LOOP over!".format(SPLoopNum), BC.END)
             break
-        print(BC.WARNING,"Not converged in iteration {}. Continuing SP loop".format(SPLoopNum),BC.END)
+        print(BC.WARNING, "Not converged in iteration {}. Continuing SP loop".format(SPLoopNum), BC.END)
 
-
-    print(BC.OKMAGENTA,"Molcrys Charge-Iteration done!",BC.END)
+    print(BC.OKMAGENTA, "Molcrys Charge-Iteration done!", BC.END)
     print("")
     print_time_rel_and_tot(currtime, origtime, modulename="Molcrys: SP iterations")
-    currtime=time.time()
+    currtime = time.time()
 
-    #Now that charges are converged (for mainfrag and counterfrags ???).
-    #Now derive LJ parameters ?? Important for DDEC-LJ derivation
-    #Defining atomtypes in Cluster fragment for LJ interaction
-    #Now also adding charges for each fragment
+    # Now that charges are converged (for mainfrag and counterfrags ???).
+    # Now derive LJ parameters ?? Important for DDEC-LJ derivation
+    # Defining atomtypes in Cluster fragment for LJ interaction
+    # Now also adding charges for each fragment
     if theory.__class__.__name__ == "ORCATheory":
-        ash.functions.functions_molcrys.choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters)
+        ash.functions.functions_molcrys.choose_shortrangemodel(Cluster, shortrangemodel, fragmentobjects, QMtheory,
+                                                               mainfrag_gbwfile, numcores, LJHparameters)
     else:
-        ash.functions.functions_molcrys.choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,"dummy",numcores,LJHparameters)
+        ash.functions.functions_molcrys.choose_shortrangemodel(Cluster, shortrangemodel, fragmentobjects, QMtheory,
+                                                               "dummy", numcores, LJHparameters)
 
-    #print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
-    currtime=time.time()
+    # print_time_rel_and_tot(currtime, origtime, modulename="LJ stuff done")
+    currtime = time.time()
 
-
-
-    #New: writing atomcharges, residues and element info to FF file
-    atomtypesdict={}
+    # New: writing atomcharges, residues and element info to FF file
+    atomtypesdict = {}
     with open('Cluster_forcefield.ff', 'a') as forcefile:
         forcefile.write('# Residues (fragmenttypes)\n')
-        for fragnum,frag in enumerate(fragmentobjects):
-            forcefile.write('resid{}_atomtypes {}\n'.format(fragnum,' '.join([str(i) for i in fragmentobjects[fragnum].atomtypelist])))
-            forcefile.write('resid{}_charges {}\n'.format(fragnum,' '.join([str(i) for i in fragmentobjects[fragnum].charges])))
-            forcefile.write('resid{}_elements {}\n'.format(fragnum,' '.join([str(i) for i in fragmentobjects[fragnum].Atoms])))
+        for fragnum, frag in enumerate(fragmentobjects):
+            forcefile.write('resid{}_atomtypes {}\n'.format(fragnum, ' '.join(
+                [str(i) for i in fragmentobjects[fragnum].atomtypelist])))
+            forcefile.write(
+                'resid{}_charges {}\n'.format(fragnum, ' '.join([str(i) for i in fragmentobjects[fragnum].charges])))
+            forcefile.write(
+                'resid{}_elements {}\n'.format(fragnum, ' '.join([str(i) for i in fragmentobjects[fragnum].Atoms])))
         forcefile.write('# Charges for each atomtype\n')
-        #This is not helping (more charges than atomtypes). Let's keep charges as part of Fragment
-        #for fragnum,frag in enumerate(fragmentobjects):
+        # This is not helping (more charges than atomtypes). Let's keep charges as part of Fragment
+        # for fragnum,frag in enumerate(fragmentobjects):
         #    for atype,charge in zip(fragmentobjects[fragnum].atomtypelist,fragmentobjects[fragnum].all_atomcharges[-1]):
         #        forcefile.write('charge  {} {}\n'.format(atype,charge))
         forcefile.write('# Elements for each atomtype\n')
-        for fragnum,frag in enumerate(fragmentobjects):
-            for atype,el in zip(fragmentobjects[fragnum].atomtypelist,fragmentobjects[fragnum].Atoms):
-                atomtypesdict[atype]=el
+        for fragnum, frag in enumerate(fragmentobjects):
+            for atype, el in zip(fragmentobjects[fragnum].atomtypelist, fragmentobjects[fragnum].Atoms):
+                atomtypesdict[atype] = el
         for atypex in atomtypesdict.items():
-            forcefile.write('element  {} {}\n'.format(atypex[0],atypex[1]))
+            forcefile.write('element  {} {}\n'.format(atypex[0], atypex[1]))
 
-
-    #Adding Centralmainfrag to Cluster
+    # Adding Centralmainfrag to Cluster
     Cluster.add_centralfraginfo(Centralmainfrag)
-    #Printing out Cluster fragment file
+    # Printing out Cluster fragment file
     Cluster.print_system('Cluster.ygg')
-    #Cleanup
-    #QMMM_SP_calculation.qm_theory.cleanup()
-    currtime=time.time()
+    # Cleanup
+    # QMMM_SP_calculation.qm_theory.cleanup()
+    currtime = time.time()
 
     print_time_rel(module_init_time, modulename='Molcrys', moduleindex=0)
     return Cluster
