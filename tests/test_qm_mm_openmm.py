@@ -1,23 +1,26 @@
-from ash import *
 import numpy as np
 import os
 
-
-# QM/MM tests with OpenMMTheory and NonBondedTheory, using PySCFTheory for QM-part
+from ash.modules.module_coords import Fragment
+from ash.modules.module_MM import MMforcefield_read, NonBondedTheory
+from ash.interfaces.interface_OpenMM import OpenMMTheory
+from ash.interfaces.interface_pyscf import PySCFTheory
+from ash.modules.module_QMMM import QMMMTheory
+from ash.modules.module_singlepoint import Singlepoint
 
 def test_qm_mm_pyscf_nonbondedtheory_MeOH_H2O():
-    H2O_MeOH = Fragment(xyzfile=f"./tests/xyzfiles/h2o_MeOH.xyz")
+    h2o_meoh = Fragment(xyzfile=f"./tests/xyzfiles/h2o_MeOH.xyz")
 
     # Specifying the QM atoms (3-8) by atom indices (MeOH). The other atoms (0,1,2) is the H2O and MM.
     # IMPORTANT: atom indices begin at 0.
-    qmatoms = [3, 4, 5, 6, 7, 8]
+    qm_atoms = [3, 4, 5, 6, 7, 8]
 
     # Charge definitions for whole system.
     # Charges for the QM atoms are zero (since ASH will always set QM atoms to zero in elstat embedding)
-    atomcharges = [-0.834, 0.417, 0.417, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    atom_charges = [-0.834, 0.417, 0.417, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     # Defining atomtypes for whole system
-    atomtypes = ['OT', 'HT', 'HT', 'CX', 'HX', 'HX', 'HX', 'OT', 'HT']
+    atom_types = ['OT', 'HT', 'HT', 'CX', 'HX', 'HX', 'HX', 'OT', 'HT']
 
     # Read forcefield (here containing LJ-part only) from file
     mm_forcefield = MMforcefield_read(f"./tests/extra_files/MeOH_H2O-sigma.ff")
@@ -27,21 +30,21 @@ def test_qm_mm_pyscf_nonbondedtheory_MeOH_H2O():
                      basis="def2-SVP",
                      densityfit=False)
 
-    mm_part = NonBondedTheory(charges=atomcharges,
-                              atomtypes=atomtypes,
+    mm_part = NonBondedTheory(charges=atom_charges,
+                              atomtypes=atom_types,
                               forcefield=mm_forcefield,
                               LJcombrule='geometric',
                               codeversion="py")
     # Creating QM/MM object
-    qmmm_object = QMMMTheory(fragment=H2O_MeOH,
+    qmmm_object = QMMMTheory(fragment=h2o_meoh,
                              qm_theory=qm,
                              mm_theory=mm_part,
-                             qmatoms=qmatoms,
+                             qmatoms=qm_atoms,
                              embedding='elstat')
 
     # Single-point energy calculation of QM/MM object
     result = Singlepoint(theory=qmmm_object,
-                         fragment=H2O_MeOH,
+                         fragment=h2o_meoh,
                          charge=0,
                          mult=1,
                          Grad=True)
@@ -138,16 +141,16 @@ def test_qm_mm_pyscf_openmm_lysozyme():
                      densityfit=True)
     # qm = xTBTheory()
     # Create QM/MM OBJECT
-    qmmmobject = QMMMTheory(qm_theory=qm,
-                            mm_theory=omm,
-                            qm_charge=-1,
-                            qm_mult=1,
-                            fragment=fragment,
-                            embedding="Elstat",
-                            qmatoms=qm_atoms,
-                            printlevel=2)
+    qmmm_object = QMMMTheory(qm_theory=qm,
+                             mm_theory=omm,
+                             qm_charge=-1,
+                             qm_mult=1,
+                             fragment=fragment,
+                             embedding="Elstat",
+                             qmatoms=qm_atoms,
+                             printlevel=2)
 
-    Singlepoint(theory=qmmmobject,
+    Singlepoint(theory=qmmm_object,
                 fragment=fragment,
                 Grad=True)
     os.remove('ASH_SP.result')
