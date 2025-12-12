@@ -242,8 +242,6 @@ from .modules.module_MM import (NonBondedTheory,
                                 LJCoulpy,
                                 coulombcharge,
                                 LennardJones,
-                                LJCoulombv2,
-                                LJCoulomb,
                                 MMforcefield_read)
 # MDtraj
 from .interfaces.interface_mdtraj import (MDtraj_imagetraj,

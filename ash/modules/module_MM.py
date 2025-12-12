@@ -192,7 +192,6 @@ class NonBondedTheory(Theory):
         CheckpointTime = time.time()
         # See speed-tests at /home/bjornsson/pairpot-test
 
-
         # New for-loop for creating sigmaij and epsij arrays. Uses dict-lookup instead
         if self.printlevel >= 2:
             print("Using Python version for array creation")
@@ -213,7 +212,6 @@ class NonBondedTheory(Theory):
                 elif (self.atomtypes[j], self.atomtypes[i]) in self.LJpairpotdict:
                     self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
                     self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
-
 
         if self.printlevel >= 2:
             # print("self.sigmaij ({}) : {}".format(len(self.sigmaij), self.sigmaij))
@@ -323,27 +321,6 @@ class NonBondedTheory(Theory):
             ashexit()
             self.MMenergy, self.MMGradient = LJCoulpy(current_coords, self.atomtypes, charges, self.LJpairpotentials,
                                                       connectivity=connectivity)
-        elif self.codeversion == 'f2py':
-            if self.printlevel >= 2:
-                print("Using Fortran F2Py MM code")
-            try:
-                # print(os.environ.get("LD_LIBRARY_PATH"))
-                import LJCoulombv1
-            except:
-                print("Fortran library LJCoulombv1 not found! Make sure you have run the installation script.")
-            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy = \
-                LJCoulomb(current_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
-        elif self.codeversion == 'f2pyv2':
-            if self.printlevel >= 2:
-                print("Using fast Fortran F2Py MM code v2")
-            try:
-                import LJCoulombv2
-                print(LJCoulombv2.__doc__)
-                print("----------")
-            except:
-                print("Fortran library LJCoulombv2 not found! Make sure you have run the installation script.")
-            self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy = \
-                LJCoulombv2(current_coords, self.epsij, self.sigmaij, charges, connectivity=connectivity)
         else:
             print("Unknown version of MM code")
             ashexit()
@@ -543,39 +520,6 @@ UFF_modH_dict = {'H': [0.000, 0.000], 'He': [2.362, 0.056], 'Li': [2.451, 0.025]
 #  0.0046 (eps  ?)      0.224500  (Rmin/2 )
 
 
-# Fast LJ-Coulomb via Fortran and f2PY
-# Outdated, to be removed
-def LJCoulomb(coords, epsij, sigmaij, charges, connectivity=None):
-    ashexit()
-    # print("Inside LJCoulomb")
-    # Todo: Avoid calling import everytime in the future...
-    import LJCoulombv1
-    # print(LJCoulombv1.__doc__)
-    numatoms = len(coords)
-    rc = 9999.5
-    grad = np.zeros((numatoms, 3))
-    penergy, LJenergy, coulenergy, grad = LJCoulombv1.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3,
-                                                                  natom=numatoms)
-    return penergy, grad, LJenergy, coulenergy
-
-
-# Fast LJ-Coulomb via Fortran and f2PY
-# Outdated, to be removed
-def LJCoulombv2(coords, epsij, sigmaij, charges, connectivity=None):
-    # print("Inside LJCoulomb")
-    # Todo: Avoid calling import everytime in the future...
-    import LJCoulombv2
-    # print(LJCoulombv2.__doc__)
-    numatoms = len(coords)
-    # rc: threshold for ignoring LJ interaction
-    rc = 9999.5
-    grad = np.zeros((numatoms, 3))
-    # Calling Fortran function
-    penergy, LJenergy, coulenergy, grad = LJCoulombv2.ljcoulegrad(coords, rc, epsij, sigmaij, charges, grad, dim=3,
-                                                                  natom=numatoms)
-    return penergy, grad, LJenergy, coulenergy
-
-
 # Slow Lennard-Jones function
 # Outdated.
 def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
@@ -609,14 +553,14 @@ def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
                     pairdistance = distance(coords[i], coords[j])
                     # print("sigma, eps, pairdistance", sigma,eps,pairdistance)
                     V_LJ = 4 * epsij[i, j] * (
-                                (sigmaij[i, j] / pairdistance) ** 12 - (sigmaij[i, j] / pairdistance) ** 6)
+                            (sigmaij[i, j] / pairdistance) ** 12 - (sigmaij[i, j] / pairdistance) ** 6)
                     energy += V_LJ
                     # Typo in http://localscf.com/localscf.com/LJPotential.aspx.html ??
                     # Using http://www.courses.physics.helsinki.fi/fys/moldyn/lectures/L4.pdf
                     # Check this: http://people.virginia.edu/~lz2n/mse627/notes/Potentials.pdf
                     LJgrad_const = (24 * epsij[i, j] * (
-                                (sigmaij[i, j] / pairdistance) ** 6 - 2 * (sigmaij[i, j] / pairdistance) ** 12)) * (
-                                               1 / (pairdistance ** 2))
+                            (sigmaij[i, j] / pairdistance) ** 6 - 2 * (sigmaij[i, j] / pairdistance) ** 12)) * (
+                                           1 / (pairdistance ** 2))
                     gr = np.array(
                         [(coords[i][0] - coords[j][0]) * LJgrad_const, (coords[i][1] - coords[j][1]) * LJgrad_const,
                          (coords[i][2] - coords[j][2]) * LJgrad_const])
@@ -678,62 +622,6 @@ def coulombcharge_np(charges, coords):
     return energy, gradient
 
 
-def distance_matrix_cupy(coords1, coords2):
-    import cupy as cp
-    diff = coords1[:, cp.newaxis, :] - coords2[cp.newaxis, :, :]
-    dist = cp.sqrt(cp.sum(diff ** 2, axis=-1))
-    return dist, diff
-
-
-# Decent Coulomb-charge cupy-version with batching
-def coulombcharge_cupy(charges, coords, batch_size=1000):
-    import cupy as cp
-    ang2bohr = 1.88972612546  # Angstrom to Bohr conversion factor
-    coords_b = cp.array(coords * ang2bohr)
-    charges = cp.array(np.array(charges).flatten())
-    num_atoms = len(charges)
-    energy = cp.float64(0)
-    gradient = cp.zeros((num_atoms, 3), dtype=cp.float64)
-
-    for i in range(0, num_atoms, batch_size):
-        end_i = min(i + batch_size, num_atoms)
-        coords_batch_i = coords_b[i:end_i]
-        charges_batch_i = charges[i:end_i]
-
-        for j in range(i, num_atoms, batch_size):
-            end_j = min(j + batch_size, num_atoms)
-            coords_batch_j = coords_b[j:end_j]
-            charges_batch_j = charges[j:end_j]
-
-            dist_matrix, diff_matrix = distance_matrix_cupy(coords_batch_i, coords_batch_j)
-
-            # Avoid self-interactions
-            if i == j:
-                cp.fill_diagonal(dist_matrix, cp.inf)
-
-            charges_matrix = cp.outer(charges_batch_i, charges_batch_j)
-
-            # Calculate Coulomb energy
-            pair_energies = charges_matrix / dist_matrix
-            energy += cp.sum(cp.triu(pair_energies) if i == j else pair_energies)
-
-            # Calculate gradient (note the sign change here)
-            efield_pair = -diff_matrix / dist_matrix[..., cp.newaxis] ** 3
-            grad_contrib_i = cp.sum(efield_pair * charges_batch_j[cp.newaxis, :, cp.newaxis], axis=1)
-            gradient[i:end_i] += charges_batch_i[:, cp.newaxis] * grad_contrib_i
-
-            if i != j:
-                grad_contrib_j = -cp.sum(efield_pair * charges_batch_i[:, cp.newaxis, cp.newaxis], axis=0)
-                gradient[j:end_j] += charges_batch_j[:, cp.newaxis] * grad_contrib_j
-            else:
-                # For i == j, we need to zero out the diagonal contributions
-                grad_contrib_j = -cp.sum(efield_pair * charges_batch_i[:, cp.newaxis, cp.newaxis], axis=0)
-                grad_contrib_j[cp.arange(end_j - i)] = 0
-                gradient[j:end_j] += charges_batch_j[:, cp.newaxis] * grad_contrib_j
-
-    return float(energy.get()), gradient.get()
-
-
 def old_coulombcharge(charges, coords):
     # Converting list to numpy array and converting to bohr
     ang2bohr = 1.8897259886  # Angstrom to Bohr conversion factor
@@ -765,9 +653,6 @@ def old_coulombcharge(charges, coords):
                     gradient[count_j] -= -1 * Efield_pair_i * charge_j
     return energy, gradient
 
-
-# Combined Lennard-Jones and Coulomb
-# Terribly written
 
 def LJCoulpy(coords, atomtypes, charges, LJPairpotentials, connectivity=None):
     print("Inside LJCoulpy function")
@@ -840,8 +725,8 @@ def LJCoulpy(coords, atomtypes, charges, LJPairpotentials, connectivity=None):
                                 # TODO: Equation needs to be double-checked for correctness. L4.pdf equation ambiguous
                                 # Check this: http://people.virginia.edu/~lz2n/mse627/notes/Potentials.pdf
                                 LJgrad_const = (24 * eps * (
-                                            (sigma / pairdistance) ** 6 - 2 * (sigma / pairdistance) ** 12)) * (
-                                                           1 / (pairdistance ** 2))
+                                        (sigma / pairdistance) ** 6 - 2 * (sigma / pairdistance) ** 12)) * (
+                                                       1 / (pairdistance ** 2))
                                 # print("LJgrad_const ", LJgrad_const)
                                 # print("LJgrad_const:", LJgrad_const)
                                 gr = np.array([(coords[i][0] - coords[j][0]) * LJgrad_const,
