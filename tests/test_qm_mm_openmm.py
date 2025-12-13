@@ -3,7 +3,7 @@ import os
 
 from ash.modules.module_coords import Fragment
 from ash.modules.module_MM import MMforcefield_read, NonBondedTheory
-from ash.interfaces.interface_OpenMM import OpenMMTheory
+from ash.interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD
 from ash.interfaces.interface_pyscf import PySCFTheory
 from ash.modules.module_QMMM import QMMMTheory
 from ash.modules.module_singlepoint import Singlepoint
@@ -184,6 +184,52 @@ def test_qm_mm_orca_openmm():
 
     os.remove('ASH_SP.result')
     os.remove('h2o_MeOH.pdb')
+
+
+def test_qm_mm_md():
+    h2o_meoh = Fragment(xyzfile=f"./tests/xyzfiles/h2o_MeOH.xyz")
+
+    # Write PDB-file for OpenMM (used for topology)
+    h2o_meoh.write_pdbfile_openmm(filename="h2o_MeOH.pdb", skip_connectivity=True)
+    pdb_file = "h2o_MeOH.pdb"
+
+    frag = Fragment(pdbfile=pdb_file)
+
+    # Specifying the QM atoms (3-8) by atom indices (MeOH). The other atoms (0,1,2) is the H2O and MM.
+    # IMPORTANT: atom indices begin at 0.
+    qm_atoms = [3, 4, 5, 6, 7, 8]
+
+    # ORCA
+    orcasimpleinput = "! BP86 def2-SVP tightscf notrah"
+    orcablocks = "%scf maxiter 200 end"
+
+    qm = ORCATheory(orcasimpleinput=orcasimpleinput,
+                    orcablocks=orcablocks)
+
+    omm = OpenMMTheory(xmlfiles=[f"./tests/extra_files/MeOH_H2O-sigma.xml"],
+                       pdbfile=pdb_file,
+                       autoconstraints=None,
+                       rigidwater=False)
+
+    # Creating QM/MM object
+    qm_mm = QMMMTheory(qm_theory=qm,
+                       mm_theory=omm,
+                       fragment=frag,
+                       qmatoms=qm_atoms,
+                       printlevel=2,
+                       qm_charge=0,
+                       qm_mult=1)
+
+    OpenMM_MD(fragment=frag,
+              theory=qm_mm,
+              timestep=0.001,
+              simulation_steps=10,
+              #simulation_time=1,
+              traj_frequency=1000,
+              temperature=300,
+              integrator='LangevinMiddleIntegrator',
+              coupling_frequency=1,
+              trajectory_file_option='pdb')
 
 
 def test_qm_mm_pyscf_openmm_lysozyme():
