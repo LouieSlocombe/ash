@@ -44,6 +44,7 @@ from ash.modules.module_singlepoint import Singlepoint
 from ash.interfaces.interface_mdtraj import MDtraj_import, MDtraj_imagetraj, MDtraj_RMSF
 import ash.functions.functions_parallel
 import ash.modules.module_plotting
+from openmm import app
 
 
 class OpenMMTheory:
@@ -66,7 +67,7 @@ class OpenMMTheory:
                  restraints=None, frozen_atoms=None, fragment=None, dummysystem=False,
                  autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None,
                  residuetemplate_choice=None,
-                 RPMD_num_copies=32):
+                 RPMD_num_copies=4):
 
         self.printlevel = printlevel
         print_line_with_mainheader("OpenMM Theory")
@@ -2630,12 +2631,29 @@ def print_systemsize(modeller):
     print("System size: {} atoms\n".format(len(modeller.getPositions())))
 
 
-def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfile=None, waterxmlfile=None,
-                    watermodel=None, pH=7.0,
-                    solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
-                    ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False,
-                    platform="CPU", use_pdbfixer=True, implicit=False, implicit_solvent_xmlfile=None,
-                    membrane=False, membrane_lipidtype='POPC', membrane_padding=10.0, membraneCenterZ=0.0,
+def OpenMM_Modeller(pdbfile=None,
+                    forcefield_object=None,
+                    forcefield=None,
+                    xmlfile=None,
+                    waterxmlfile=None,
+                    watermodel=None,
+                    pH=7.0,
+                    solvent_padding=10.0,
+                    solvent_boxdims=None,
+                    extraxmlfile=None,
+                    residue_variants=None,
+                    ionicstrength=0.1,
+                    pos_iontype='Na+',
+                    neg_iontype='Cl-',
+                    use_higher_occupancy=False,
+                    platform="CPU",
+                    use_pdbfixer=True,
+                    implicit=False,
+                    implicit_solvent_xmlfile=None,
+                    membrane=False,
+                    membrane_lipidtype='POPC',
+                    membrane_padding=10.0,
+                    membraneCenterZ=0.0,
                     residuetemplate_choice=None):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
@@ -3015,9 +3033,15 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
 
     # Creating new OpenMM object from forcefield so that we can write out system XMLfile
     print("Creating OpenMMTheory object")
-    openmmobject = OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
-                                topology=modeller.topology, pdbfile=None, periodic=periodic,
-                                autoconstraints='HBonds', rigidwater=True, printlevel=0,
+    openmmobject = OpenMMTheory(platform=platform,
+                                forcefield=forcefield_obj,
+                                topoforce=True,
+                                topology=modeller.topology,
+                                pdbfile=None,
+                                periodic=periodic,
+                                autoconstraints='None', # 'HBonds'
+                                rigidwater=False, # True
+                                printlevel=0,
                                 residuetemplate_choice=residuetemplate_choice)
     # Write out System XMLfile
     # TODO: Disable ?
@@ -3518,20 +3542,50 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
 
 class OpenMM_MDclass:
-    def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.001,
-                 traj_frequency=1000, restartfile_frequency=1000, temperature=300,
+    def __init__(self,
+                 fragment=None,
+                 theory=None,
+                 charge=None,
+                 mult=None,
+                 timestep=0.001,
+                 traj_frequency=1000,
+                 restartfile_frequency=1000,
+                 temperature=300,
                  integrator='LangevinMiddleIntegrator',
-                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
-                 specialtraj_frequency=1000, specialatoms=None,
-                 energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
-                 coupling_frequency=1, printlevel=2, platform='CPU',
-                 anderson_thermostat=False, hydrogenmass=1.5, constraints=None, restraints=None,
-                 enforcePeriodicBox=True, special_wrapping=False, special_wrapping_updatepos=False, wrapping_atoms=None,
-                 dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
-                 datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
-                 centerforce_atoms=None, centerforce_constant=1.0, centerforce_distance=10.0, centerforce_center=None,
+                 barostat=None,
+                 pressure=1,
+                 trajectory_file_option='DCD',
+                 trajfilename='trajectory',
+                 specialtraj_frequency=1000,
+                 specialatoms=None,
+                 energy_file_option=None,
+                 force_file_option=None,
+                 atomic_units_force_reporter=False,
+                 coupling_frequency=1,
+                 printlevel=2,
+                 platform='CPU',
+                 anderson_thermostat=False,
+                 hydrogenmass=1.5,
+                 constraints=None,
+                 restraints=None,
+                 enforcePeriodicBox=True,
+                 special_wrapping=False,
+                 special_wrapping_updatepos=False,
+                 wrapping_atoms=None,
+                 dummyatomrestraint=False,
+                 center_on_atoms=None,
+                 solute_indices=None,
+                 datafilename=None,
+                 dummy_MM=False,
+                 plumed_object=None,
+                 add_centerforce=False,
+                 centerforce_atoms=None,
+                 centerforce_constant=1.0,
+                 centerforce_distance=10.0,
+                 centerforce_center=None,
                  barostat_frequency=25,
-                 chkfile=None, statefile=None):
+                 chkfile=None,
+                 statefile=None):
         module_init_time = time.time()
         import openmm
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
@@ -3543,7 +3597,11 @@ class OpenMM_MDclass:
             self.fragment = fragment
 
         # Check charge/mult
-        self.charge, self.mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "OpenMM_MD",
+        self.charge, self.mult = check_charge_mult(charge,
+                                                   mult,
+                                                   theory.theorytype,
+                                                   fragment,
+                                                   "OpenMM_MD",
                                                    theory=theory)
 
         # External QM option off by default
@@ -3970,6 +4028,23 @@ class OpenMM_MDclass:
                                                                 volume=self.volume,
                                                                 density=self.density, temperature=True, separator=',')
         simulation.reporters.append(statedatareporter_stdout)
+
+        if self.integrator == 'RPMDIntegrator':
+            output_prefix = 'tmp'
+            simulation.reporters.append(RPMDCentroidReporter(
+                topology=self.simulation.topology,
+                file_name=f"{output_prefix}_centroid.pdb",
+                reportInterval=self.traj_frequency,
+                num_beads=4,
+            ))
+
+            simulation.reporters.append(RPMDBeadReporter(
+                topology=self.simulation.topology,
+                file_base_name=output_prefix,
+                reportInterval=self.traj_frequency,
+                num_beads=4,
+            ))
+
         # Another reporter for writing to file
         if self.dataoutputoption != stdout:
             print("Creating StateDataReporter that will write to file:", self.datafilename)
@@ -6679,3 +6754,122 @@ def write_xmlfile_parmed(topology, system, xmlfilename):
     ww.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
     ww.write(xmlfilename)
     print("Wrote XML-file:", xmlfilename)
+
+
+class RPMDBeadReporter(object):
+    """
+    A custom reporter for OpenMM that saves the trajectory of EVERY individual
+    bead in an RPMD simulation to separate PDB files.
+    """
+
+    def __init__(self, file_base_name, reportInterval, num_beads, topology):
+        """
+        args:
+            file_base_name (str): Prefix for files (e.g., 'output' -> 'output_bead_0.pdb')
+            reportInterval (int): How often to write frames (steps)
+            num_beads (int): Number of beads in the RPMD integrator
+            topology (Topology): The system topology
+        """
+        self._reportInterval = reportInterval
+        self._num_beads = num_beads
+        self._topology = topology
+        self._next_frame_index = 0
+
+        # Create a list of open file handles, one for each bead
+        self._files = []
+        for i in range(num_beads):
+            filename = f"{file_base_name}_bead_{i}.pdb"
+            f = open(filename, 'w')
+            # Write the PDB Header for each file
+            app.PDBFile.writeHeader(topology, f)
+            self._files.append(f)
+
+    def describeNextReport(self, simulation):
+        """
+        Tells the Simulation when the next report is due.
+        """
+        steps = self._reportInterval - simulation.currentStep % self._reportInterval
+        return (steps, False, False, False, False)
+
+    def report(self, simulation, state):
+        """
+        Called by the Simulation to generate the report.
+        """
+        # We must access the integrator specifically to get bead positions
+        integrator = simulation.integrator
+
+        # Loop through every bead
+        for i in range(self._num_beads):
+            # getState(bead_index, ...) is specific to RPMDIntegrator
+            # Note: enforcePeriodicBox must match your system settings
+            bead_state = integrator.getState(i, getPositions=True, enforcePeriodicBox=True)
+            positions = bead_state.getPositions()
+
+            # Write the frame (Model) to the specific bead's file
+            app.PDBFile.writeModel(self._topology, positions, self._files[i], self._next_frame_index)
+
+            # Flush periodically to ensure data is written to disk
+            if self._next_frame_index % 10 == 0:
+                self._files[i].flush()
+
+        self._next_frame_index += 1
+
+    def __del__(self):
+        """
+        Cleanup: Close all file handles when the reporter is destroyed.
+        """
+        for f in self._files:
+            try:
+                # Write footer before closing to ensure valid PDB syntax
+                app.PDBFile.writeFooter(self._topology, f)
+                f.close()
+            except:
+                pass
+
+
+class RPMDCentroidReporter(object):
+    """
+    A custom reporter that calculates the centroid (average position) of all beads
+    and writes it to a single PDB file.
+    """
+
+    def __init__(self, file_name, reportInterval, num_beads, topology):
+        self._reportInterval = reportInterval
+        self._num_beads = num_beads
+        self._topology = topology
+        self._next_frame_index = 0
+        self._out = open(file_name, 'w')
+        app.PDBFile.writeHeader(topology, self._out)
+
+    def describeNextReport(self, simulation):
+        steps = self._reportInterval - simulation.currentStep % self._reportInterval
+        return (steps, False, False, False, False)
+
+    def report(self, simulation, state):
+        integrator = simulation.integrator
+
+        # Get first bead to initialize sum
+        # We use asNumpy=True for vector efficiency, though OpenMM Quantities also support math.
+        sum_pos = integrator.getState(0, getPositions=True, enforcePeriodicBox=True).getPositions(asNumpy=True)
+
+        # Sum positions of remaining beads
+        for i in range(1, self._num_beads):
+            pos = integrator.getState(i, getPositions=True, enforcePeriodicBox=True).getPositions(asNumpy=True)
+            sum_pos += pos
+
+        # Calculate Average
+        centroid_pos = sum_pos / self._num_beads
+
+        # Write to file
+        app.PDBFile.writeModel(self._topology, centroid_pos, self._out, self._next_frame_index)
+        self._next_frame_index += 1
+
+        if self._next_frame_index % 10 == 0:
+            self._out.flush()
+
+    def __del__(self):
+        try:
+            app.PDBFile.writeFooter(self._topology, self._out)
+            self._out.close()
+        except:
+            pass
