@@ -1630,6 +1630,10 @@ class OpenMMTheory:
             self.integrator = openmm.RPMDIntegrator(self.RPMD_num_copies, self.temperature * openmm.unit.kelvin,
                                                     self.coupling_frequency / openmm.unit.picosecond,
                                                     self.timestep * openmm.unit.picoseconds)
+        elif self.integrator_name == 'QTBIntegrator':
+            self.integrator = openmm.QTBIntegrator(self.temperature * openmm.unit.kelvin,
+                                                   self.coupling_frequency / openmm.unit.picosecond,
+                                                   self.timestep * openmm.unit.picoseconds)
         else:
             print(BC.FAIL,
                   "Unknown integrator.\n Valid integrator keywords are: VerletIntegrator, VariableVerletIntegrator, "
