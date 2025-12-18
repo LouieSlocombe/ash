@@ -12,7 +12,7 @@ dependencies:
   - openmm
   - openmmtools
   - pdbfixer
-  - openmmplumed
+  - openmm-plumed
   - openff-toolkit
   - openmmforcefields
   - ase
