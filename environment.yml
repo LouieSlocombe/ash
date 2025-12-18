@@ -1,23 +1,25 @@
-name: ash_test
+name: ash
 channels:
   - conda-forge
 dependencies:
-  - python>=3.12
+  - python>=3.13
   - pip
-  - openmm
-  - pdbfixer
   - mdtraj
   - numpy
   - scipy
   - matplotlib
   - parmed
-  - plumed
-  - mdanalysis
+  - openmm
+  - openmmtools
+  - pdbfixer
+  - openmmplumed
+  - openff-toolkit
+  - openmmforcefields
   - ase
   - xtb
   - xtb-python
-  - typing_extensions
+  - geometric
+  - pyscf
+  - pytest
   - pip:
-      - geometric
-      - pyscf
       - pyframe
